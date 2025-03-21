@@ -10,10 +10,11 @@ from django.contrib import messages
 
 @api_view(['POST'])
 def login(request):
-    username = request.data.get('username')
+    email = request.data.get('email')
     password = request.data.get('password')
 
-    user = authenticate(username=username, password=password)
+    user = authenticate(request,email=email, password=password)  # Now it works with email
+
     if user is not None:
         refresh = RefreshToken.for_user(user)
         user_data = UserSerializer(user).data
@@ -31,15 +32,15 @@ def protected_view(request):
     return Response({"message": f"Hello, {request.user.username}"})
 
 @api_view(['POST'])
-def registerv(request):
-    username = request.data.get('username')
+def register(request):
     password = request.data.get('password')
     email = request.data.get('email')
+    full_name = request.data.get('full_name')
     
-    if User.objects.filter(username=username).exists():
-        return Response({"message": "Username already exists"}, status=400)
+    if User.objects.filter(email=email).exists():
+        return Response({"message": "User already exists"}, status=400)
     
-    user = User.objects.create_user(username=username, password=password, email=email)
+    user = User.objects.create_user(username=full_name , password=password, email=email)
     user.save()
     
     refresh = RefreshToken.for_user(user)

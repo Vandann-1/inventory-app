@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'email','password']
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -12,5 +12,5 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['username'] = user.username  # Add extra fields to the token
+        token['email'] = user.email  # Add extra fields to the token
         return token
