@@ -9,6 +9,12 @@ function sendRequestToDjango($endpoint, $data = [], $token = null, $method = 'PO
     ];
 
     if ($token) {
+        /* if token is available then it appends it to the headers array like
+        as we have 2 array index already
+        [0] -> Content-Type: application/json
+        [1] -> Accept: application/json
+        [2] -> Authorization: Bearer abcd1234xyz
+        The "Bearer" part indicates that the token is a Bearer Token (a common form of access token used in OAuth 2.0). */
         $headers[] = "Authorization: Bearer $token";
     }
 
