@@ -12,16 +12,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ]);
 
     //For Debugging
-    echo "<pre>";
+    /* echo "<pre>";
     print_r($response);
-    echo "</pre>";
+    echo "</pre>"; */
 
     if (isset($response['token'])) {
         $_SESSION['token'] = $response['token'];
-        $msg  = "<div id='success-form'>Login Successful! <a href='protected.php'>Access Protected Data</a></div>";
-        header('location: register.php');
+        $user_data = $response['user'];
+        $_SESSION['username'] = $user_data['username'];
+        $_SESSION['Admin_Login'] = "yes";
+        header('location: index');
     } else {
-        $msg = $response['message'];
+        $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> Invalid Login credentials.</div>"; // default $response['message'];
     }
 }
 ?>
@@ -35,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <title>Login | TS</title>
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/imgs/favicon.png">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style-login.css">
   <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 </head>
 
