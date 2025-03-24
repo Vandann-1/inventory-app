@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'api.php';
+require 'function.inc.php';
 
 // Check Admin_Login session
 if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
@@ -11,31 +12,75 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
     exit();
 }
 
+
+
+$msg = '';
+
+// To show success msg after creation of user and reload
+if (isset($_SESSION['success_msg'])) {
+    $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
+         . $_SESSION['success_msg'] . 
+         "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>";
+    unset($_SESSION['success_msg']); // Clear the session after storing in a variable
+    echo "";
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $full_name = $_POST['full_name'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $full_name = validate_input($_POST['full_name']);
+    $mobile = validate_input($_POST['mobile']);
+    $email = validate_input($_POST['email']);
+    $password = validate_input($_POST['password']);
+    $confirm_password = validate_input($_POST['confirm_password']);
 
-    $response = sendRequestToDjango('register/', [
-        'full_name' => $full_name,
-        'email' => $email,
-        'password' => $password
-    ]);
-
-    //For Debugging
-    /* echo "<pre>";
-    print_r($response);
-    echo "</pre>"; */
-
-    if (isset($response['token']) && isset($_SESSION['token'])) {
-        echo "Created";
-        //header('location: newuser');
-    } else {
+    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password)){
         $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-{$response['message']}
-<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-</div>"; $response['message'];//"<div id='error'><i class='fa-regular fa-circle-exclamation'></i> Invalid Login credentials.</div>"; // default $response['message'];
+        All fields are required!
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        </div>";
+    }else{
+        if(!validateMobile($mobile)){
+            $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+            Enter a valid Mobile Number!
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>";
+        }else{
+            if($password == $confirm_password){
+                $response = sendRequestToDjango('register/', [
+                    'full_name' => $full_name,
+                    'email' => $email,
+                    'password' => $password,
+                    'mobile_no' => $mobile
+                ]);
+            
+                //For Debugging
+                /* echo "<pre>";
+                print_r($response);
+                echo "</pre>"; */
+            
+                if (isset($response['token']) && isset($_SESSION['token'])) {
+                    $_SESSION['success_msg'] = $response['message'];
+                    session_write_close(); // to ensure that session is saved before redirect
+                    $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+                    header("location: $file_name"); // Redirect without .php
+                    exit();
+                } else {
+                    $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+                    {$response['message']}{$response['error']}
+                    <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+                    </div>";  // default $response['message'];
+                }
+            }else{
+                $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+                The passwords you entered do not match. Please ensure both fields contain the same password.
+                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+                </div>";
+            }
+        }
+
     }
+
+    
 }
 ?>
 
@@ -64,8 +109,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 
-    <link rel="stylesheet" href="assets/css/style1.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
 <body>
@@ -218,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <li class="nav-item dropdown has-arrow main-drop">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-                        <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
+                            <i class="fa-solid fa-user"></i>
                             <span class="status online"></span></span>
                     </a>
                     <div class="dropdown-menu menu-drop-user">
@@ -258,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="sidebar-inner slimscroll">
                 <div id="sidebar-menu" class="sidebar-menu">
                     <ul>
-                        <li class="active">
+                        <li>
                             <a href="index"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
                         </li>
                         <li class="submenu">
@@ -333,10 +380,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </ul>
                         </li>
                         <li class="submenu">
-                            <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="newuser">New User </a></li>
-                                <li><a href="userlists.html">Users List</a></li>
+                                <li><a href="newuser" class="active">New User </a></li>
+                                <li><a href="userlists">Users List</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
@@ -360,55 +407,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="page-header">
                     <div class="page-title">
                         <h4>User Management</h4>
-                        <h6>Add/Update User</h6>
+                        <h6>Add/Create User</h6>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-body">
                         <?php echo $msg; ?>
-                        <form method="post" id="myForm">
+                        <form method="post" id="create_user">
                             <div class="row">
                                 <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
-                                        <label>User Name</label>
-                                        <input type="text" name="full_name">
+                                        <label>Full Name</label>
+                                        <input type="text" placeholder="Enter user full name" name="full_name">
                                     </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
                                         <label>Email</label>
-                                        <input type="text" name="email">
+                                        <input type="text" placeholder="Enter a user email id" name="email">
                                     </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Mobile</label>
+                                        <input type="text" name="mobile" placeholder="Enter user mobile no" pattern="[6-9][0-9]{9}" maxlength="10">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Role</label>
+                                        <select class="select" name="role">
+                                            <option>Select</option>
+                                            <option>Role</option>
+                                            <option>Role1</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
                                         <label>Password</label>
                                         <div class="pass-group">
-                                            <input type="password" name="password" class=" pass-input">
+                                            <input type="password" placeholder="Enter user password" name="password" class=" pass-input">
                                             <span class="fas toggle-password fa-eye-slash"></span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
-                                        <label>Mobile</label>
-                                        <input type="text">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Role</label>
-                                        <select class="select">
-                                            <option>Select</option>
-                                            <option>Role</option>
-                                            <option>Role1</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
                                         <label>Confirm Password</label>
                                         <div class="pass-group">
-                                            <input type="password" class=" pass-inputs">
+                                            <input type="password" placeholder="Confirm user password" class=" pass-inputs" name="confirm_password">
                                             <span class="fas toggle-passworda fa-eye-slash"></span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-lg-12">
-                                    <a class="btn btn-submit me-2" onclick="document.getElementById('myForm').submit();">Login</a>
+                                    <a class="btn btn-submit me-2" onclick="document.getElementById('create_user').submit();">Create</a>
                                     <!-- <input type="submit" name="submit" class="btn btn-submit me-2" value="Login"><br> -->
                                     <a class="btn btn-cancel">Cancel</a>
                                 </div>
