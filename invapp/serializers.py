@@ -6,7 +6,7 @@ from .models import Categories
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email','password','username']
+        fields = ['id', 'email','password','username','mobile_no']
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
