@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
-import pytz
+# import pytz
 
 # for customeruser to see a data 
 from .serializers import CustomUserSerializer 

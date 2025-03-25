@@ -35,6 +35,9 @@ ALLOWED_HOSTS = []
 TIME_ZONE = 'Asia/Kolkata'
 USE_TZ = True
 
+AUTH_USER_MODEL = 'invapp.CustomUser'
+
+
 # Application definition
 
 INSTALLED_APPS = [

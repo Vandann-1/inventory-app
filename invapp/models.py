@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
-import pytz
+# import pytz
 
 # for user registration
 class User(AbstractUser):
@@ -23,4 +23,10 @@ class Categories(models.Model):
 
     def __str__(self):
         return self.name
+    
+class CustomUser(AbstractUser):
+    mobile_no = models.CharField(max_length=15, unique=True, null=True, blank=True)
+
+    def __str__(self):
+        return self.username
 
