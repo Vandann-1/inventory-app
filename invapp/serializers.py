@@ -6,16 +6,7 @@ from .models import Categories
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email','password','username','mobile_no']
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['email'] = user.email  # Add extra fields to the token
-        return token
+        fields = ['id', 'email','password','username']
 
 
 class CategorySerializer(serializers.ModelSerializer):

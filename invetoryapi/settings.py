@@ -30,9 +30,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-AUTH_USER_MODEL = 'invapp.User'
+# settings.py
 
-
+TIME_ZONE = 'Asia/Kolkata'
+USE_TZ = True
 
 # Application definition
 

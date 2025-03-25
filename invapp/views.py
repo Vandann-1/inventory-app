@@ -8,6 +8,8 @@ from .serializers import UserSerializer
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.utils import timezone
+import pytz
 
 # for customeruser to see a data 
 from .serializers import CustomUserSerializer 
@@ -35,9 +37,9 @@ def login(request):
             "token": str(refresh.access_token),
             "refresh": str(refresh),
             "user": user_data
-        })
+        }, status=200)
     else:
-        return Response({"message": "Invalid credentials"}, status=400)
+        return Response({"message": "Invalid credentials"}, status=401)
 
 # logic for user {protected view}
 @api_view(['GET'])
@@ -52,17 +54,16 @@ def register(request):
         password = request.data.get('password')
         email = request.data.get('email')
         full_name = request.data.get('full_name')
-        mobile_no = request.data.get('mobile_no')
 
         if not password or not email or not full_name:
             return Response({"message": "All fields are required"}, status=404)
 
         if User.objects.filter(email=email).exists():
-            return Response({"message": "User with same email already exists"}, status=404)
+            return Response({"message": "User with same email already exists"}, status=409)
 
-        user = User.objects.create_user(username=full_name, password=password, email=email, mobile_no=mobile_no)
+        user = User.objects.create_user(username=full_name, password=password, email=email)
         if not user:
-            return Response({"message": "Not Registered"}, status=404)
+            return Response({"message": "User refistration failed"}, status=500)
 
         user.save()
 
@@ -74,7 +75,7 @@ def register(request):
             "token": str(refresh.access_token),
             "refresh": str(refresh),
             "user": user_data
-        }, status=404)
+        }, status=201)
 
     except Exception as e:
         return Response({"message": "Not Registered", "error": str(e)}, status=404)
@@ -87,21 +88,54 @@ def categories(request):
         # Retrieve all categories
         categories = Categories.objects.all()
         serializer = CategorySerializer(categories, many=True)
-        return Response(serializer.data)
+
+        data = []
+        for categories in serializer.data:
+            data.append({
+                "id": categories["id"],
+                "name": categories["name"],
+                "desc": categories["desc"],
+                "created_on": categories["created_at"]
+            })
+        return Response({"Categories": data})   # Return formatted data
 
     elif request.method == 'POST':
-        #  Create a new category
-        serializer = CategorySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        category_name = request.data.get('category_name')
+        category_desc = request.data.get('category_desc')
+
+
+        # Validation
+        if not category_name or category_desc is None:
+            return Response({"message": "All fields are required"}, status=404)
+
+        if Categories.objects.filter(name=category_name).exists():
+            return Response({"message": "Category with the same name already exists"}, status=409)
+        
+        # Creating category
+        # Get India Time Zone
+        india_tz = pytz.timezone('Asia/Kolkata')
+        current_time = timezone.now().astimezone(india_tz)
+
+        # Create Category
+        category = Categories.objects.create(
+            name=category_name,
+            desc=category_desc,
+            created_at=current_time
+        )
+        serializer = CategorySerializer(category)
+
+        # Token for user if authenticated
+        refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
+
+        return Response({
+            "message": "Category Created Successfully!",
+            "token": str(refresh.access_token),
+            "refresh": str(refresh),
+            "data": serializer.data
+            }, status=201)
     
     # return list like users
     # add function for production
-    
-    
-    
 
 @api_view(['GET'])
 def users(request):
@@ -114,9 +148,7 @@ def users(request):
         data.append({
             "id": user["id"],
             "username": user["username"],
-            "email": user["email"],
-            "is_active":user["is_active"],
-            "mobile_no":user["mobile_no"]
+            "email": user["email"]
         })
 
     return Response({"users": data})   # Return formatted data

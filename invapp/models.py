@@ -1,7 +1,8 @@
 from django.db import models
-
-
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.utils import timezone
+import pytz
+
 # for user registration
 class User(AbstractUser):
     mobile_no = models.CharField(max_length=15, blank=True, null=True)
@@ -10,13 +11,16 @@ class User(AbstractUser):
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=255,unique=True)
-    desc = models.TextField(null=True,blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    
-    
+    name = models.CharField(max_length=255, unique=True)
+    desc = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)  # Capture current time with timezone support
 
-def __str__(self):
-    return self.name
+    def save(self, *args, **kwargs):
+        india_timezone = pytz.timezone('Asia/Kolkata')
+        if not self.created_at:
+            self.created_at = timezone.now().astimezone(india_timezone)
+        super(Categories, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
 
