@@ -1,6 +1,6 @@
 <?php
 session_start();
-
+require 'api.php';
 
 // Check Admin_Login session
 if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
@@ -10,6 +10,18 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
     header('Location: login');
     exit();
 }
+
+$categories = '';
+$token = $_SESSION['token'];
+$response = sendRequestToDjango('categories/', [], $token, 'GET');
+
+if (isset($response['error'])) {
+    echo "Error: " . $response['error'];
+} else {
+    $categories = $response['Categories'];
+    //$categoryCount = count($categories); // Get total number of categories
+}
+
 ?>
 
 
@@ -20,21 +32,10 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="description" content="POS - Bootstrap Admin Template">
-    <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, management, minimal, modern,  html5, responsive">
+    <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
     <meta name="author" content="Dreamguys - Bootstrap Admin Template">
     <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<script>
-  window.addEventListener('pageshow', function(event) {
-    if (event.persisted) {
-      window.location.reload();
-    }
-  });
-</script>
-
-    <title>Dashboard | TS</title>
+    <title>Dreams Pos admin template</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.jpg">
 
@@ -42,11 +43,12 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
 
     <link rel="stylesheet" href="assets/css/animate.css">
 
+    <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
+
     <link rel="stylesheet" href="assets/css/dataTables.bootstrap4.min.css">
 
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -97,6 +99,28 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
                         </form>
                     </div>
                 </li>
+
+
+                <li class="nav-item dropdown has-arrow flag-nav">
+                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);" role="button">
+                        <img src="assets/img/flags/us1.png" alt="" height="20">
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a href="javascript:void(0);" class="dropdown-item">
+                            <img src="assets/img/flags/us.png" alt="" height="16"> English
+                        </a>
+                        <a href="javascript:void(0);" class="dropdown-item">
+                            <img src="assets/img/flags/fr.png" alt="" height="16"> French
+                        </a>
+                        <a href="javascript:void(0);" class="dropdown-item">
+                            <img src="assets/img/flags/es.png" alt="" height="16"> Spanish
+                        </a>
+                        <a href="javascript:void(0);" class="dropdown-item">
+                            <img src="assets/img/flags/de.png" alt="" height="16"> German
+                        </a>
+                    </div>
+                </li>
+
 
                 <li class="nav-item dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
@@ -184,23 +208,24 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
 
                 <li class="nav-item dropdown has-arrow main-drop">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-user"></i>
+                        <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
                             <span class="status online"></span></span>
                     </a>
                     <div class="dropdown-menu menu-drop-user">
                         <div class="profilename">
                             <div class="profileset">
-                                <i class="fa-solid fa-user"></i>
+                                <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
                                     <span class="status online"></span></span>
                                 <div class="profilesets">
-                                    <h6><?= htmlspecialchars($_SESSION['username']); ?></h6>
+                                    <h6>John Doe</h6>
+                                    <h5>Admin</h5>
                                 </div>
                             </div>
                             <hr class="m-0">
                             <a class="dropdown-item" href="profile"> <i class="me-2" data-feather="user"></i> My Profile</a>
                             <a class="dropdown-item" href="generalsettings"><i class="me-2" data-feather="settings"></i>Settings</a>
                             <hr class="m-0">
-                            <a class="dropdown-item logout pb-0" href="logout"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
+                            <a class="dropdown-item logout pb-0" href="signin"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
                         </div>
                     </div>
                 </li>
@@ -223,15 +248,15 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
             <div class="sidebar-inner slimscroll">
                 <div id="sidebar-menu" class="sidebar-menu">
                     <ul>
-                        <li class="active">
+                        <li>
                             <a href="index"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
                         </li>
                         <li class="submenu">
-                            <a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
                             <ul>
                                 <li><a href="productlist">Product List</a></li>
                                 <li><a href="addproduct">Add Product</a></li>
-                                <li><a href="categorylist">Category List</a></li>
+                                <li><a href="categorylist" class="active">Category List</a></li>
                                 <li><a href="addcategory">Add Category</a></li>
                                 <li><a href="subcategorylist">Sub Category List</a></li>
                                 <li><a href="subaddcategory">Add Sub Category</a></li>
@@ -322,283 +347,148 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
 
         <div class="page-wrapper">
             <div class="content">
-                <div class="row">
-                    <div class="col-lg-3 col-sm-6 col-12">
-                        <div class="dash-widget">
-                            <div class="dash-widgetimg">
-                                <span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-                            </div>
-                            <div class="dash-widgetcontent">
-                                <h5>$<span class="counters" data-count="307144.00">$307,144.00</span></h5>
-                                <h6>Total Purchase Due</h6>
-                            </div>
-                        </div>
+                <div class="page-header">
+                    <div class="page-title">
+                        <h4>Product Category list</h4>
+                        <h6>View/Search product Category</h6>
                     </div>
-                    <div class="col-lg-3 col-sm-6 col-12">
-                        <div class="dash-widget dash1">
-                            <div class="dash-widgetimg">
-                                <span><img src="assets/img/icons/dash2.svg" alt="img"></span>
-                            </div>
-                            <div class="dash-widgetcontent">
-                                <h5>$<span class="counters" data-count="4385.00">$4,385.00</span></h5>
-                                <h6>Total Sales Due</h6>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12">
-                        <div class="dash-widget dash2">
-                            <div class="dash-widgetimg">
-                                <span><img src="assets/img/icons/dash3.svg" alt="img"></span>
-                            </div>
-                            <div class="dash-widgetcontent">
-                                <h5>$<span class="counters" data-count="385656.50">385,656.50</span></h5>
-                                <h6>Total Purchase Amount</h6>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12">
-                        <div class="dash-widget dash3">
-                            <div class="dash-widgetimg">
-                                <span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-                            </div>
-                            <div class="dash-widgetcontent">
-                                <h5>$<span class="counters" data-count="40000.00">400.00</span></h5>
-                                <h6>Total Sale Amount</h6>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12 d-flex">
-                        <div class="dash-count">
-                            <div class="dash-counts">
-                                <h4>100</h4>
-                                <h5>Products</h5>
-                            </div>
-                            <div class="dash-imgs">
-                                <i class="fas fa-inventory"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12 d-flex">
-                        <div class="dash-count das1">
-                            <div class="dash-counts">
-                                <h4>100</h4>
-                                <h5>Customers</h5>
-                            </div>
-                            <div class="dash-imgs">
-                                <i data-feather="user"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12 d-flex">
-                        <div class="dash-count das2">
-                            <div class="dash-counts">
-                                <h4>100</h4>
-                                <h5>Purchase Invoice</h5>
-                            </div>
-                            <div class="dash-imgs">
-                                <i data-feather="file-text"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-sm-6 col-12 d-flex">
-                        <div class="dash-count das3">
-                            <div class="dash-counts">
-                                <h4>105</h4>
-                                <h5>Sales Invoice</h5>
-                            </div>
-                            <div class="dash-imgs">
-                                <i data-feather="file"></i>
-                            </div>
-                        </div>
+                    <div class="page-btn">
+                        <a href="addcategory" class="btn btn-added">
+                            <img src="assets/img/icons/plus.svg" class="me-1" alt="img">Add Category
+                        </a>
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-lg-7 col-sm-12 col-12 d-flex">
-                        <div class="card flex-fill">
-                            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Purchase & Sales</h5>
-                                <div class="graph-sets">
-                                    <ul>
-                                        <li>
-                                            <span>Sales</span>
-                                        </li>
-                                        <li>
-                                            <span>Purchase</span>
-                                        </li>
-                                    </ul>
-                                    <div class="dropdown">
-                                        <button class="btn btn-white btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                            2022 <img src="assets/img/icons/dropdown.svg" alt="img" class="ms-2">
-                                        </button>
-                                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                            <li>
-                                                <a href="javascript:void(0);" class="dropdown-item">2022</a>
-                                            </li>
-                                            <li>
-                                                <a href="javascript:void(0);" class="dropdown-item">2021</a>
-                                            </li>
-                                            <li>
-                                                <a href="javascript:void(0);" class="dropdown-item">2020</a>
-                                            </li>
-                                        </ul>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-top">
+                            <div class="search-set">
+                                <div class="search-path">
+                                    <a class="btn btn-filter" id="filter_search">
+                                        <img src="assets/img/icons/filter.svg" alt="img">
+                                        <span><img src="assets/img/icons/closes.svg" alt="img"></span>
+                                    </a>
+                                </div>
+                                <div class="search-input">
+                                    <a class="btn btn-searchset"><img src="assets/img/icons/search-white.svg" alt="img"></a>
+                                </div>
+                            </div>
+                            <div class="wordset">
+                                <ul>
+                                    <li>
+                                        <a data-bs-toggle="tooltip" data-bs-placement="top" title="pdf"><img src="assets/img/icons/pdf.svg" alt="img"></a>
+                                    </li>
+                                    <li>
+                                        <a data-bs-toggle="tooltip" data-bs-placement="top" title="excel"><img src="assets/img/icons/excel.svg" alt="img"></a>
+                                    </li>
+                                    <li>
+                                        <a data-bs-toggle="tooltip" data-bs-placement="top" title="print"><img src="assets/img/icons/printer.svg" alt="img"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card" id="filter_inputs">
+                            <div class="card-body pb-0">
+                                <div class="row">
+                                    <div class="col-lg-2 col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <select class="select">
+                                                <option>Choose Category</option>
+                                                <option>Computers</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <select class="select">
+                                                <option>Choose Sub Category</option>
+                                                <option>Fruits</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <select class="select">
+                                                <option>Choose Sub Brand</option>
+                                                <option>Iphone</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-1 col-sm-6 col-12 ms-auto">
+                                        <div class="form-group">
+                                            <a class="btn btn-filters ms-auto"><img src="assets/img/icons/search-whites.svg" alt="img"></a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div id="sales_charts"></div>
-                            </div>
                         </div>
-                    </div>
-                    <div class="col-lg-5 col-sm-12 col-12 d-flex">
-                        <div class="card flex-fill">
-                            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-                                <h4 class="card-title mb-0">Recently Added Products</h4>
-                                <div class="dropdown">
-                                    <a href="javascript:void(0);" data-bs-toggle="dropdown" aria-expanded="false" class="dropset">
-                                        <i class="fa fa-ellipsis-v"></i>
-                                    </a>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                        <li>
-                                            <a href="productlist" class="dropdown-item">Product List</a>
-                                        </li>
-                                        <li>
-                                            <a href="addproduct" class="dropdown-item">Product Add</a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive dataview">
-                                    <table class="table datatable ">
-                                        <thead>
-                                            <tr>
-                                                <th>Sno</th>
-                                                <th>Products</th>
-                                                <th>Price</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>1</td>
-                                                <td class="productimgname">
-                                                    <a href="productlist" class="product-img">
-                                                        <img src="assets/img/product/product22.jpg" alt="product">
-                                                    </a>
-                                                    <a href="productlist">Apple Earpods</a>
-                                                </td>
-                                                <td>$891.2</td>
-                                            </tr>
-                                            <tr>
-                                                <td>2</td>
-                                                <td class="productimgname">
-                                                    <a href="productlist" class="product-img">
-                                                        <img src="assets/img/product/product23.jpg" alt="product">
-                                                    </a>
-                                                    <a href="productlist">iPhone 11</a>
-                                                </td>
-                                                <td>$668.51</td>
-                                            </tr>
-                                            <tr>
-                                                <td>3</td>
-                                                <td class="productimgname">
-                                                    <a href="productlist" class="product-img">
-                                                        <img src="assets/img/product/product24.jpg" alt="product">
-                                                    </a>
-                                                    <a href="productlist">samsung</a>
-                                                </td>
-                                                <td>$522.29</td>
-                                            </tr>
-                                            <tr>
-                                                <td>4</td>
-                                                <td class="productimgname">
-                                                    <a href="productlist" class="product-img">
-                                                        <img src="assets/img/product/product6.jpg" alt="product">
-                                                    </a>
-                                                    <a href="productlist">Macbook Pro</a>
-                                                </td>
-                                                <td>$291.01</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card mb-0">
-                    <div class="card-body">
-                        <h4 class="card-title">Expired Products</h4>
-                        <div class="table-responsive dataview">
-                            <table class="table datatable ">
+
+                        <div class="table-responsive">
+                            <table class="table  datanew">
                                 <thead>
                                     <tr>
-                                        <th>SNo</th>
-                                        <th>Product Code</th>
-                                        <th>Product Name</th>
-                                        <th>Brand Name</th>
-                                        <th>Category Name</th>
-                                        <th>Expiry Date</th>
+                                        <th>
+                                            <label class="checkboxs">
+                                                <input type="checkbox" id="select-all">
+                                                <span class="checkmarks"></span>
+                                            </label>
+                                        </th>
+                                        <th>Category name</th>
+                                        <th>Description</th>
+                                        <th>Created On</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                <?php
+                                foreach ($categories as $category) { 
+                                    $createdAt = $category['created_on']; // Use created_on instead of created_at
+                                
+                                    if (empty($createdAt)) {
+                                        echo "Created At is empty for Category ID: " . htmlspecialchars($category['id']);
+                                        continue;
+                                    }
+                                
+                                    // Handle microseconds with fallback
+                                    $date = DateTime::createFromFormat('Y-m-d\TH:i:s.u\Z', $createdAt);
+                                    
+                                    if ($date === false) {
+                                        echo "Invalid Date for Category ID: " . htmlspecialchars($category['id']) . " with Date: " . htmlspecialchars($createdAt);
+                                        continue;
+                                    }
+                                
+                                    // Convert to IST
+                                    $date->setTimezone(new DateTimeZone('Asia/Kolkata'));
+                                    $formatted_date =  $date->format('Y-m-d h:i:s A');
+                                    ?>
                                     <tr>
-                                        <td>1</td>
-                                        <td><a href="javascript:void(0);">IT0001</a></td>
-                                        <td class="productimgname">
-                                            <a class="product-img" href="productlist">
-                                                <img src="assets/img/product/product2.jpg" alt="product">
-                                            </a>
-                                            <a href="productlist">Orange</a>
+                                        <td>
+                                            <label class="checkboxs">
+                                                <input type="checkbox">
+                                                <span class="checkmarks"></span>
+                                            </label>
                                         </td>
-                                        <td>N/D</td>
-                                        <td>Fruits</td>
-                                        <td>12-12-2022</td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td><a href="javascript:void(0);">IT0002</a></td>
-                                        <td class="productimgname">
-                                            <a class="product-img" href="productlist">
-                                                <img src="assets/img/product/product3.jpg" alt="product">
+                                        <td><?= htmlspecialchars($category['name']); ?></td>
+                                        <td><?= htmlspecialchars($category['desc']); ?></td>
+                                        <td><?= htmlspecialchars($formatted_date); ?></td><!--  Example: 2025-03-25 10:59:51 -->
+                                        <td>
+                                            <a class="me-3" href="editcategory">
+                                                <img src="assets/img/icons/edit.svg" alt="img">
                                             </a>
-                                            <a href="productlist">Pineapple</a>
-                                        </td>
-                                        <td>N/D</td>
-                                        <td>Fruits</td>
-                                        <td>25-11-2022</td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td><a href="javascript:void(0);">IT0003</a></td>
-                                        <td class="productimgname">
-                                            <a class="product-img" href="productlist">
-                                                <img src="assets/img/product/product4.jpg" alt="product">
+                                            <a class="me-3 confirm-text" href="javascript:void(0);">
+                                                <img src="assets/img/icons/delete.svg" alt="img">
                                             </a>
-                                            <a href="productlist">Stawberry</a>
                                         </td>
-                                        <td>N/D</td>
-                                        <td>Fruits</td>
-                                        <td>19-11-2022</td>
                                     </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td><a href="javascript:void(0);">IT0004</a></td>
-                                        <td class="productimgname">
-                                            <a class="product-img" href="productlist">
-                                                <img src="assets/img/product/product5.jpg" alt="product">
-                                            </a>
-                                            <a href="productlist">Avocat</a>
-                                        </td>
-                                        <td>N/D</td>
-                                        <td>Fruits</td>
-                                        <td>20-11-2022</td>
-                                    </tr>
+                                <?php } ?>
+                                    
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -615,8 +505,10 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
 
     <script src="assets/js/bootstrap.bundle.min.js"></script>
 
-    <script src="assets/plugins/apexchart/apexcharts.min.js"></script>
-    <script src="assets/plugins/apexchart/chart-data.js"></script>
+    <script src="assets/plugins/select2/js/select2.min.js"></script>
+
+    <script src="assets/plugins/sweetalert/sweetalert2.all.min.js"></script>
+    <script src="assets/plugins/sweetalert/sweetalerts.min.js"></script>
 
     <script src="assets/js/script.js"></script>
 </body>

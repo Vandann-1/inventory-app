@@ -12,8 +12,6 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
     exit();
 }
 
-
-
 $msg = '';
 
 // To show success msg after creation of user and reload
@@ -23,7 +21,6 @@ if (isset($_SESSION['success_msg'])) {
          "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
     </div>";
     unset($_SESSION['success_msg']); // Clear the session after storing in a variable
-    echo "";
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -51,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'email' => $email,
                     'password' => $password,
                     'mobile_no' => $mobile
-                ]);
+                ], $_SESSION['token']);
             
                 //For Debugging
                 /* echo "<pre>";
@@ -66,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     exit();
                 } else {
                     $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                    {$response['message']}{$response['error']}
+                    " . htmlspecialchars($response['message']) . "
                     <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
                     </div>";  // default $response['message'];
                 }
@@ -79,8 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
     }
-
-    
 }
 ?>
 
@@ -128,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <a href="index" class="logo">
                     <img src="assets/img/logo.png" alt="">
                 </a>
-                <a href="index.html" class="logo-small">
+                <a href="index" class="logo-small">
                     <img src="assets/img/logo-small.png" alt="">
                 </a>
                 <a id="toggle_btn" href="javascript:void(0);">
@@ -175,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="noti-content">
                             <ul class="notification-list">
                                 <li class="notification-message">
-                                    <a href="activities.html">
+                                    <a href="activities">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-02.jpg">
@@ -191,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities.html">
+                                    <a href="activities">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-03.jpg">
@@ -207,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities.html">
+                                    <a href="activities">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-06.jpg">
@@ -224,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities.html">
+                                    <a href="activities">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-17.jpg">
@@ -240,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities.html">
+                                    <a href="activities">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-13.jpg">
@@ -258,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </ul>
                         </div>
                         <div class="topnav-dropdown-footer">
-                            <a href="activities.html">View all Notifications</a>
+                            <a href="activities">View all Notifications</a>
                         </div>
                     </div>
                 </li>
@@ -278,8 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                             </div>
                             <hr class="m-0">
-                            <a class="dropdown-item" href="profile.html"> <i class="me-2" data-feather="user"></i> My Profile</a>
-                            <a class="dropdown-item" href="generalsettings.html"><i class="me-2" data-feather="settings"></i>Settings</a>
+                            <a class="dropdown-item" href="profile"> <i class="me-2" data-feather="user"></i> My Profile</a>
+                            <a class="dropdown-item" href="generalsettings"><i class="me-2" data-feather="settings"></i>Settings</a>
                             <hr class="m-0">
                             <a class="dropdown-item logout pb-0" href="logout"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
                         </div>
@@ -292,9 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"
                     aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
                 <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" href="profile.html">My Profile</a>
-                    <a class="dropdown-item" href="generalsettings.html">Settings</a>
-                    <a class="dropdown-item" href="signin.html">Logout</a>
+                    <a class="dropdown-item" href="profile">My Profile</a>
+                    <a class="dropdown-item" href="generalsettings">Settings</a>
+                    <a class="dropdown-item" href="signin">Logout</a>
                 </div>
             </div>
 
@@ -311,72 +306,72 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="productlist.html">Product List</a></li>
-                                <li><a href="addproduct.html">Add Product</a></li>
-                                <li><a href="categorylist.html">Category List</a></li>
-                                <li><a href="addcategory.html">Add Category</a></li>
-                                <li><a href="subcategorylist.html">Sub Category List</a></li>
-                                <li><a href="subaddcategory.html">Add Sub Category</a></li>
-                                <li><a href="brandlist.html">Brand List</a></li>
-                                <li><a href="addbrand.html">Add Brand</a></li>
-                                <li><a href="importproduct.html">Import Products</a></li>
-                                <li><a href="barcode.html">Print Barcode</a></li>
+                                <li><a href="productlist">Product List</a></li>
+                                <li><a href="addproduct">Add Product</a></li>
+                                <li><a href="categorylist">Category List</a></li>
+                                <li><a href="addcategory">Add Category</a></li>
+                                <li><a href="subcategorylist">Sub Category List</a></li>
+                                <li><a href="subaddcategory">Add Sub Category</a></li>
+                                <li><a href="brandlist">Brand List</a></li>
+                                <li><a href="addbrand">Add Brand</a></li>
+                                <li><a href="importproduct">Import Products</a></li>
+                                <li><a href="barcode">Print Barcode</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/sales1.svg" alt="img"><span> Sales</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="saleslist.html">Sales List</a></li>
-                                <li><a href="pos.html">POS</a></li>
-                                <li><a href="pos.html">New Sales</a></li>
-                                <li><a href="salesreturnlists.html">Sales Return List</a></li>
-                                <li><a href="createsalesreturns.html">New Sales Return</a></li>
+                                <li><a href="saleslist">Sales List</a></li>
+                                <li><a href="pos">POS</a></li>
+                                <li><a href="pos">New Sales</a></li>
+                                <li><a href="salesreturnlists">Sales Return List</a></li>
+                                <li><a href="createsalesreturns">New Sales Return</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Purchase</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="purchaselist.html">Purchase List</a></li>
-                                <li><a href="addpurchase.html">Add Purchase</a></li>
-                                <li><a href="importpurchase.html">Import Purchase</a></li>
+                                <li><a href="purchaselist">Purchase List</a></li>
+                                <li><a href="addpurchase">Add Purchase</a></li>
+                                <li><a href="importpurchase">Import Purchase</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/expense1.svg" alt="img"><span> Expense</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="expenselist.html">Expense List</a></li>
-                                <li><a href="createexpense.html">Add Expense</a></li>
-                                <li><a href="expensecategory.html">Expense Category</a></li>
+                                <li><a href="expenselist">Expense List</a></li>
+                                <li><a href="createexpense">Add Expense</a></li>
+                                <li><a href="expensecategory">Expense Category</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/return1.svg" alt="img"><span> Return</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="salesreturnlist.html">Sales Return List</a></li>
-                                <li><a href="createsalesreturn.html">Add Sales Return </a></li>
-                                <li><a href="purchasereturnlist.html">Purchase Return List</a></li>
-                                <li><a href="createpurchasereturn.html">Add Purchase Return </a></li>
+                                <li><a href="salesreturnlist">Sales Return List</a></li>
+                                <li><a href="createsalesreturn">Add Sales Return </a></li>
+                                <li><a href="purchasereturnlist">Purchase Return List</a></li>
+                                <li><a href="createpurchasereturn">Add Purchase Return </a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> People</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="supplierlist.html">Supplier List</a></li>
-                                <li><a href="addsupplier.html">Add Supplier </a></li>
-                                <li><a href="storelist.html">Store List</a></li>
-                                <li><a href="addstore.html">Add Store</a></li>
+                                <li><a href="supplierlist">Supplier List</a></li>
+                                <li><a href="addsupplier">Add Supplier </a></li>
+                                <li><a href="storelist">Store List</a></li>
+                                <li><a href="addstore">Add Store</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/time.svg" alt="img"><span> Report</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="purchaseorderreport.html">Purchase order report</a></li>
-                                <li><a href="inventoryreport.html">Inventory Report</a></li>
-                                <li><a href="salesreport.html">Sales Report</a></li>
-                                <li><a href="invoicereport.html">Invoice Report</a></li>
-                                <li><a href="purchasereport.html">Purchase Report</a></li>
-                                <li><a href="supplierreport.html">Supplier Report</a></li>
-                                <li><a href="customerreport.html">Customer Report</a></li>
+                                <li><a href="purchaseorderreport">Purchase order report</a></li>
+                                <li><a href="inventoryreport">Inventory Report</a></li>
+                                <li><a href="salesreport">Sales Report</a></li>
+                                <li><a href="invoicereport">Invoice Report</a></li>
+                                <li><a href="purchasereport">Purchase Report</a></li>
+                                <li><a href="supplierreport">Supplier Report</a></li>
+                                <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
                         <li class="submenu">
@@ -389,12 +384,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="generalsettings.html">General Settings</a></li>
-                                <li><a href="emailsettings.html">Email Settings</a></li>
-                                <li><a href="paymentsettings.html">Payment Settings</a></li>
-                                <li><a href="currencysettings.html">Currency Settings</a></li>
-                                <li><a href="grouppermissions.html">Group Permissions</a></li>
-                                <li><a href="taxrates.html">Tax Rates</a></li>
+                                <li><a href="generalsettings">General Settings</a></li>
+                                <li><a href="emailsettings">Email Settings</a></li>
+                                <li><a href="paymentsettings">Payment Settings</a></li>
+                                <li><a href="currencysettings">Currency Settings</a></li>
+                                <li><a href="grouppermissions">Group Permissions</a></li>
+                                <li><a href="taxrates">Tax Rates</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -413,7 +408,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <div class="card">
                     <div class="card-body">
-                        <?php echo $msg; ?>
+                        <?php 
+                        if(isset($msg)){
+                            echo $msg;
+                        } 
+                        ?>
                         <form method="post" id="create_user">
                             <div class="row">
                                 <div class="col-lg-6 col-sm-12 col-12">
@@ -465,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <div class="col-lg-12">
                                     <a class="btn btn-submit me-2" onclick="document.getElementById('create_user').submit();">Create</a>
                                     <!-- <input type="submit" name="submit" class="btn btn-submit me-2" value="Login"><br> -->
-                                    <a class="btn btn-cancel">Cancel</a>
+                                    <a class="btn btn-cancel" href="userlists">Cancel</a>
                                 </div>
                             </div>
                         </form>
