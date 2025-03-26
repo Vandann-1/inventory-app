@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User 
+from .models import CustomUser
 from .models import Categories 
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id', 'email','password','username']
+        model = CustomUser
+        fields = ['id', 'email','password','username','mobile_no','is_active']
+        
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 
-class CustomUserSerializer(serializers.ModelSerializer):  # for see user data in admin panel
+""" class CustomUserSerializer(serializers.ModelSerializer):  # for see user data in admin panel
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']               
+        fields = ['id', 'username', 'email']      """          

@@ -38,6 +38,7 @@ USE_TZ = True
 AUTH_USER_MODEL = 'invapp.CustomUser'
 
 
+
 # Application definition
 
 INSTALLED_APPS = [
