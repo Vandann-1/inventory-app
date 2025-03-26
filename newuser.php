@@ -13,6 +13,7 @@ if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['A
 }
 
 $msg = '';
+$response = '';
 
 // To show success msg after creation of user and reload
 if (isset($_SESSION['success_msg'])) {
@@ -63,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     exit();
                 } else {
                     $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                    " . htmlspecialchars($response['message']) . "
+                    " . htmlspecialchars($response['message']) . htmlspecialchars($response['error']) . "
                     <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
                     </div>";  // default $response['message'];
                 }
@@ -409,6 +410,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="card">
                     <div class="card-body">
                         <?php 
+                        echo "<pre>";
+                        print_r($response);
+                        echo "</pre>";
                         if(isset($msg)){
                             echo $msg;
                         } 

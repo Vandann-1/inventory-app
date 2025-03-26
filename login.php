@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['Admin_Login'] = "yes";
         header('location: index');
     } else {
-        $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> Invalid Login credentials.</div>"; // default $response['message'];
+        $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> ".htmlspecialchars($response['message'])."</div>"; // default $response['message'];
     }
 }
 ?>
@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body class="login">
   <!-------- Login form -------->
   <div class="container-login">
-    <?php if (isset($msg)) {
+    <?php 
+    if (isset($msg)) {
       echo $msg;
     } ?><br>
     <div class="wrapper">

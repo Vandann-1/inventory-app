@@ -446,7 +446,12 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($users as $user) { ?>
+                                    <?php 
+                                    echo "HTTP Code: $httpCode";
+                                    echo $response['message'];
+                                    echo "<pre>";
+    print_r($response);
+    echo "</pre>";foreach ($users as $user) { ?>
                                         <tr>
                                             <td>
                                                 <label class="checkboxs">
@@ -455,18 +460,18 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                                                 </label>
                                             </td>
                                             <td><?= htmlspecialchars($user['username']); ?></td>
-                                            <td><?= !empty($user['mobile']) ? htmlspecialchars($user['mobile']) : 'N/A'; ?></td>
+                                            <td><?= !empty($user['mobile_no']) ? htmlspecialchars($user['mobile_no']) : 'N/A'; ?></td>
                                             <td><a href="mailto:<?= htmlspecialchars($user['email']); ?>"><?= htmlspecialchars($user['email']); ?></a></td>
                                             <td>
                                                 <?php
-                                                    if ($user['is_active'] == 1) { ?>
-                                                        <a href='?ac=inactive&requestid=<?= htmlspecialchars($user['id']) ?>'
-                                                            class='bg-lightgreen badges'>Active</a>
+                                                    if ($user['status'] == 1) { ?>
+                                                        <a href='?ac=active&requestid=<?= htmlspecialchars($user['id']) ?>'
+                                                        ><span class="bg-lightgreen badges">Active</span></a>
                                                     <?php } else { ?>
                                                         <a href='?ac=active&requestid=<?= htmlspecialchars($user['id']) ?>'
-                                                            class='btn-c pending'>Inactive</a>
+                                                            ><span class="btn btn-primary badges">InActive</span></a>
                                                 <?php } ?>
-                                                <span class="bg-lightgreen badges">Active</span>
+                                                
                                             </td>
                                             <td>
                                                 <a class="me-3" href="edituser.php?id=<?= $user['id']; ?>">
