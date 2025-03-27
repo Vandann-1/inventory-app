@@ -35,3 +35,4 @@ function sendRequestToDjango($endpoint, $data = [], $token = null, $method = 'PO
     curl_close($ch);
     return json_decode($response, true);
 }
+?>

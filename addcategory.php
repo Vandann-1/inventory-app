@@ -4,14 +4,11 @@ require 'api.php';
 require 'function.inc.php';
 
 // Check Admin_Login session
-if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
-    // User is logged in
-} else {
+if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION['Admin_Login'] == '' && $_SESSION['Admin_Login'] != 'yes') {
     // Redirect to login page
     header('Location: login');
     exit();
 }
-
 
 $msg = '';
 $response = '';

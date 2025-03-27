@@ -3,9 +3,7 @@ session_start();
 require 'api.php';
 
 // Check Admin_Login session
-if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
-    // User is logged in
-} else {
+if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION['Admin_Login'] == '' && $_SESSION['Admin_Login'] != 'yes') {
     // Redirect to login page
     header('Location: login');
     exit();
@@ -26,26 +24,57 @@ if (isset($response['error'])) {
 
 // Check if action and requestid are set
 if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !empty($_GET['requestid'])) {
-    $action = filter_input(INPUT_GET, 'ac', FILTER_SANITIZE_STRING);
-    $request_id = filter_input(INPUT_GET, 'requestid', FILTER_SANITIZE_STRING);
+    $action = filter_input(INPUT_GET, 'ac', FILTER_SANITIZE_SPECIAL_CHARS);
+    $request_id = filter_input(INPUT_GET, 'requestid', FILTER_SANITIZE_SPECIAL_CHARS);
 
     // Sending data to Django
     $response = sendRequestToDjango('user_management/', [
         'action' => $action,
-        'user_id' => $request_id 
-    ]);
+        'user_id' => $request_id
+    ], $_SESSION['token'], 'POST');
 
     // Handling the response
-    if (isset($response['message'])) {
+    if ($response) {
         echo htmlspecialchars($response['message']);
         $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
         header("location: $file_name"); // Redirect without .php
     } else {
         echo "An error occurred while processing your request.";
     }
-} else {
-    echo "Something went wrong!";
 }
+
+// To show success msg after creation of user and reload
+if (isset($_SESSION['success_msg'])) {
+    $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
+        . $_SESSION['success_msg'] .
+        "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>";
+    unset($_SESSION['success_msg']); // Clear the session after storing in a variable
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!empty($_POST['selected_users'])) {
+        $selectedUsers = $_POST['selected_users'];
+
+        $response = sendRequestToDjango('bulk_delete/', [
+            'user_codes' => $selectedUsers
+        ], $_SESSION['token']);
+
+        if (isset($response['success']) && $response['success'] === true) {
+            $_SESSION['success_msg'] =  htmlspecialchars($response['message']);
+            session_write_close(); // to ensure that session is saved before redirect
+            $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+            header("location: $file_name"); // Redirect without .php
+            exit();
+        } else {
+            $msg = "<div class='alert alert-danger'>Error: " . htmlspecialchars($response['message'] ?? 'Unknown error') . "</div>";
+        }
+    } else {
+        $msg = "<div class='alert alert-danger'>No users selected for deletion.</div>";
+    }
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -328,7 +357,7 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                             </ul>
                         </li>
                         <li class="submenu">
-                            <a href="javascript:void(0);"  class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
                             <ul>
                                 <li><a href="newuser">New User </a></li>
                                 <li><a href="userlists" class="active">Users List</a></li>
@@ -389,6 +418,7 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                                     <li>
                                         <a data-bs-toggle="tooltip" data-bs-placement="bottom" title="print"><img src="assets/img/icons/printer.svg" alt="img"></a>
                                     </li>
+                                    <li><img src="assets/img/icons/delete.svg" alt="Delete" id="deleteBtn"></li>
                                 </ul>
                             </div>
                         </div>
@@ -429,63 +459,71 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table  datanew">
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            <label class="checkboxs">
-                                                <input type="checkbox">
-                                                <span class="checkmarks"></span>
-                                            </label>
-                                        </th>
-                                        <th>Full name </th>
-                                        <th>Phone</th>
-                                        <th>email</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    echo "HTTP Code: $httpCode";
-                                    echo $response['message'];
-                                    echo "<pre>";
-    print_r($response);
-    echo "</pre>";foreach ($users as $user) { ?>
+                            <form method="post" id="users" onsubmit="return submitForm();">
+                                <table class="table datanew">
+                                <?php if (isset($msg)) {
+                                        echo $msg;
+                                    } ?>
+                                    <thead>
                                         <tr>
-                                            <td>
+                                            <th>
                                                 <label class="checkboxs">
-                                                    <input type="checkbox" id="userCheck<?= $user['id']; ?>">
+                                                    <input type="checkbox" id="selectAll">
                                                     <span class="checkmarks"></span>
                                                 </label>
-                                            </td>
-                                            <td><?= htmlspecialchars($user['username']); ?></td>
-                                            <td><?= !empty($user['mobile_no']) ? htmlspecialchars($user['mobile_no']) : 'N/A'; ?></td>
-                                            <td><a href="mailto:<?= htmlspecialchars($user['email']); ?>"><?= htmlspecialchars($user['email']); ?></a></td>
-                                            <td>
-                                                <?php
-                                                    if ($user['status'] == 1) { ?>
-                                                        <a href='?ac=active&requestid=<?= htmlspecialchars($user['id']) ?>'
-                                                        ><span class="bg-lightgreen badges">Active</span></a>
-                                                    <?php } else { ?>
-                                                        <a href='?ac=active&requestid=<?= htmlspecialchars($user['id']) ?>'
-                                                            ><span class="btn btn-primary badges">InActive</span></a>
-                                                <?php } ?>
-                                                
-                                            </td>
-                                            <td>
-                                                <a class="me-3" href="edituser.php?id=<?= $user['id']; ?>">
-                                                    <img src="assets/img/icons/edit.svg" alt="Edit">
-                                                </a>
-                                                <a class="me-3 confirm-text" href="deleteuser.php?id=<?= $user['id']; ?>">
-                                                    <img src="assets/img/icons/delete.svg" alt="Delete">
-                                                </a>
-                                            </td>
+                                            </th>
+                                            <th>Full name</th>
+                                            <th>Phone</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
                                         </tr>
-                                    <?php } ?>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($users as $user) { ?>
+                                            <tr>
+                                                <td>
+                                                    <label class="checkboxs">
+                                                        <input type="checkbox" class="userCheckbox" name="selected_users[]" value="<?= $user['url_code']; ?>">
 
-                                </tbody>
-                            </table>
+                                                        <span class="checkmarks"></span>
+                                                    </label>
+                                                </td>
+                                                <td><?= htmlspecialchars($user['username']); ?></td>
+                                                <td><?= !empty($user['mobile_no']) ? htmlspecialchars($user['mobile_no']) : 'N/A'; ?></td>
+                                                <td><a href="mailto:<?= htmlspecialchars($user['email']); ?>"><?= htmlspecialchars($user['email']); ?></a></td>
+                                                <td>
+                                                    <?php if ($user['role'] == 'Admin') { ?>
+                                                            <span class="bg-lightgreen badges">Admin</span>
+                                                    <?php } else { ?>
+                                                            <span class="bg btn-primary badges">User</span>
+                                                    <?php } ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($user['status'] == 1) { ?>
+                                                        <a href='?ac=inactive&requestid=<?= htmlspecialchars($user['url_code']) ?>'>
+                                                            <span class="bg-lightgreen badges">Active</span>
+                                                        </a>
+                                                    <?php } else { ?>
+                                                        <a href='?ac=active&requestid=<?= htmlspecialchars($user['url_code']) ?>'>
+                                                            <span class="bg-lightred badges">Restricted</span>
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                                <td>
+                                                    <a class="me-3" href="edituser?editid=<?= $user['url_code']; ?>">
+                                                        <img src="assets/img/icons/edit.svg" alt="Edit">
+                                                    </a>
+                                                    <a class="me-3 confirm-text" href="deleteuser.php?editid=<?= $user['url_code']; ?>">
+                                                        <img src="assets/img/icons/delete.svg" alt="Delete">
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php } ?>
+                                    </tbody>
+                                </table>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -693,6 +731,45 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
 
     <script src="assets/js/script.js"></script>
     <script>
+        // Select all checkboxes when header checkbox is clicked
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.userCheckbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+    toggleDeleteButton();
+});
+
+// Enable or disable the Delete button (image) based on checkbox selection
+document.querySelectorAll('.userCheckbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        toggleDeleteButton();
+    });
+});
+
+function toggleDeleteButton() {
+    const checkedCount = document.querySelectorAll('.userCheckbox:checked').length;
+    const deleteBtn = document.getElementById('deleteBtn');
+    
+    if (checkedCount === 0) {
+        deleteBtn.style.opacity = '0.5'; // Visually disable
+        deleteBtn.style.pointerEvents = 'none'; // Disable interaction
+    } else {
+        deleteBtn.style.opacity = '1000';
+        deleteBtn.style.pointerEvents = 'auto'; // Enable interaction
+    }
+}
+
+// Submit the form when the image (Delete button) is clicked
+document.getElementById('deleteBtn').addEventListener('click', function() {
+    const checkedCount = document.querySelectorAll('.userCheckbox:checked').length;
+    if (checkedCount > 0) {
+        document.getElementById('users').submit();
+    }
+});
+
+
+
         /* to stop displaying this error alert
         DataTables warning: table id=DataTables_Table_0 - Cannot reinitialise DataTable. For more information about this error, please see http://datatables.net/tn/3 */
         $.fn.dataTable.ext.errMode = 'log';

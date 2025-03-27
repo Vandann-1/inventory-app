@@ -1,31 +1,47 @@
 <?php
+ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
 require 'api.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-
-    $response = sendRequestToDjango('login/', [
-        'email' => $email,
-        'password' => $password
-    ]);
-
-    //For Debugging
-    /* echo "<pre>";
-    print_r($response);
-    echo "</pre>"; */
-
-    if (isset($response['token'])) {
-        $_SESSION['token'] = $response['token'];
-        $user_data = $response['user'];
-        $_SESSION['username'] = $user_data['username'];
-        $_SESSION['Admin_Login'] = "yes";
-        header('location: index');
-    } else {
-        $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> ".htmlspecialchars($response['message'])."</div>"; // default $response['message'];
-    }
+// Check Admin_Login session
+if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
+  // Redirect to login page
+  header('Location: index');
+  exit();
 }
+
+$response = '';
+$msg = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  $email = $_POST['email'];
+  $password = $_POST['password'];
+
+  try {
+      $response = sendRequestToDjango('login/', [
+          'email' => $email,
+          'password' => $password
+      ]);
+
+      if ($response === false || empty($response)) {
+          throw new Exception("Server is not responding. Please try again later.");
+      }
+
+      if (isset($response['token'])) {
+          $_SESSION['token'] = $response['token'];
+          $user_data = $response['user'];
+          $_SESSION['username'] = $user_data['username'];
+          $_SESSION['Admin_Login'] = "yes";
+          header('location: index');
+          exit();
+      } else {
+          $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> " . htmlspecialchars($response['message'] ?? "An error occurred.") . "</div>";
+      }
+  } catch (Exception $e) {
+      $msg = "<div id='error'><i class='fa-regular fa-circle-exclamation'></i> " . htmlspecialchars($e->getMessage()) . "</div>";
+  }
+}
+
 ?>
 
 <!DOCTYPE html>

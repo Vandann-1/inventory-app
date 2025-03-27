@@ -1,3 +1,104 @@
+<?php
+session_start();
+require 'api.php';
+require 'function.inc.php';
+
+// Check Admin_Login session
+if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION['Admin_Login'] == '' && $_SESSION['Admin_Login'] != 'yes') {
+    // Redirect to login page
+    header('Location: login');
+    exit();
+}
+
+// To show success msg after creation of user and reload
+if (isset($_SESSION['success_msg'])) {
+    $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
+         . $_SESSION['success_msg'] . 
+         "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>";
+    unset($_SESSION['success_msg']); // Clear the session after storing in a variable
+}
+
+// Check if editid are set
+if (isset($_GET['editid']) && !empty($_GET['editid'])) {
+    $edit_id = filter_input(INPUT_GET, 'editid', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    // Sending data to Django
+    $response = sendRequestToDjango('users/?user_code=' . $edit_id, [], $_SESSION['token'], 'GET');
+
+    // Handling the response
+    if ($response) {
+        $user_data = $response;
+
+        if (isset($user_data['message'])) {
+            echo htmlspecialchars($user_data['message']);
+            $user_data = []; // Reset data to prevent errors
+        }
+    } else {
+        $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+            An error occurred while fetching user data.
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>";
+        $user_data = []; 
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $full_name = validate_input($_POST['full_name']);
+    $mobile = validate_input($_POST['mobile']);
+    $email = validate_input($_POST['email']);
+    $role = validate_input($_POST['role']);
+    $password = validate_input($_POST['password']);
+    $confirm_password = validate_input($_POST['confirm_password']);
+
+    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password) || empty($role)){
+        $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+        All fields are required!
+        <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        </div>";
+    }else{
+        if(!validateMobile($mobile)){
+            $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+            Enter a valid Mobile Number!
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>";
+        }else{
+            if($password == $confirm_password){
+                $response = sendRequestToDjango('register/', [
+                    'user_code' => $edit_id,
+                    'full_name' => $full_name,
+                    'email' => $email,
+                    'role' => $role,
+                    'password' => $password,
+                    'mobile_no' => $mobile
+                ], $_SESSION['token']);
+
+            
+                if (isset($response['token']) && isset($_SESSION['token'])) {
+                    $_SESSION['success_msg'] = htmlspecialchars($response['message']);
+                    session_write_close(); // to ensure that session is saved before redirect
+                    $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+                    header("location: $file_name"."?editid=" . urlencode($edit_id)); // Redirect without .php
+                    exit();
+                } else {
+                    $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+                    " . htmlspecialchars($response['message'])."
+                    <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+                    </div>";  // default $response['message'];
+                }
+            }else{
+                $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+                The passwords you entered do not match. Please ensure both fields contain the same password.
+                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+                </div>";
+            }
+        }
+
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -331,61 +432,65 @@
 
                 <div class="card">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>First Name</label>
-                                    <input type="text" value="Thomas">
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Last Name</label>
-                                    <input type="text" value="">
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>User Name</label>
-                                    <input type="text" value="Thomas12">
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Password</label>
-                                    <div class="pass-group">
-                                        <input type="password" class=" pass-input" placeholder="123456">
-                                        <span class="fas toggle-password fa-eye-slash"></span>
+                    <?php 
+                        if(isset($msg)){
+                            echo $msg;
+                        } 
+                        ?>
+                        <form method="post" id="edit_user">
+                            <div class="row">
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Full Name</label>
+                                        <input type="text" placeholder="Enter user full name" name="full_name" value="<?php echo $user_data['username']; ?>">
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Phone</label>
-                                    <input type="text" value="+123456789">
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="text" placeholder="Enter a user email id" name="email" value="<?php echo $user_data['email']; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Mobile</label>
+                                        <input type="text" name="mobile" placeholder="Enter user mobile no" pattern="[6-9][0-9]{9}" maxlength="10" value="<?php echo $user_data['mobile_no']; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Role</label>
+                                        <select class="select" name="role">
+                                            <option disabled selected>Select</option>
+                                            <option <?php echo (isset($user_data['role']) && $user_data['role'] === 'Admin') ? 'selected' : ''; ?>>Admin</option>
+                                            <option <?php echo (isset($user_data['role']) && $user_data['role'] === 'User') ? 'selected' : ''; ?>>User</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Password</label>
+                                        <div class="pass-group">
+                                            <input type="password" placeholder="Enter user password" name="password" class=" pass-input">
+                                            <span class="fas toggle-password fa-eye-slash"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-sm-12 col-12">
+                                    <div class="form-group">
+                                        <label>Confirm Password</label>
+                                        <div class="pass-group">
+                                            <input type="password" placeholder="Confirm user password" class=" pass-inputs" name="confirm_password">
+                                            <span class="fas toggle-passworda fa-eye-slash"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <a class="btn btn-submit me-2" onclick="document.getElementById('edit_user').submit();">Edit</a>
+                                    <a class="btn btn-cancel" href="userlists">Cancel</a>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Email</label>
-                                    <input type="text" value="thomas@mail.com">
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Role</label>
-                                    <select class="select">
-                                        <option>Owner</option>
-                                        <option> </option>
-                                    </select>
-                                </div>
-                            </div>
-                           
-                            <div class="col-lg-12">
-                                <a class="btn btn-submit me-2">Update</a>
-                                <a class="btn btn-cancel">Cancel</a>
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
 

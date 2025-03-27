@@ -4,9 +4,7 @@ require 'api.php';
 require 'function.inc.php';
 
 // Check Admin_Login session
-if (isset($_SESSION['Admin_Login']) && isset($_SESSION['token']) && $_SESSION['Admin_Login'] != '' && $_SESSION['Admin_Login'] == 'yes') {
-    // User is logged in
-} else {
+if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION['Admin_Login'] == '' && $_SESSION['Admin_Login'] != 'yes') {
     // Redirect to login page
     header('Location: login');
     exit();
@@ -28,10 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $full_name = validate_input($_POST['full_name']);
     $mobile = validate_input($_POST['mobile']);
     $email = validate_input($_POST['email']);
+    $role = validate_input($_POST['role']);
     $password = validate_input($_POST['password']);
     $confirm_password = validate_input($_POST['confirm_password']);
 
-    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password)){
+    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password) || empty($role)){
         $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
         All fields are required!
         <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
@@ -47,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $response = sendRequestToDjango('register/', [
                     'full_name' => $full_name,
                     'email' => $email,
+                    'role' => $role,
                     'password' => $password,
                     'mobile_no' => $mobile
                 ], $_SESSION['token']);
@@ -57,14 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 echo "</pre>"; */
             
                 if (isset($response['token']) && isset($_SESSION['token'])) {
-                    $_SESSION['success_msg'] = $response['message'];
+                    $_SESSION['success_msg'] = htmlspecialchars($response['message']);
                     session_write_close(); // to ensure that session is saved before redirect
                     $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
                     header("location: $file_name"); // Redirect without .php
                     exit();
                 } else {
                     $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                    " . htmlspecialchars($response['message']) . htmlspecialchars($response['error']) . "
+                    " . htmlspecialchars($response['message'])."
                     <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
                     </div>";  // default $response['message'];
                 }
@@ -410,9 +410,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="card">
                     <div class="card-body">
                         <?php 
-                        echo "<pre>";
-                        print_r($response);
-                        echo "</pre>";
                         if(isset($msg)){
                             echo $msg;
                         } 
@@ -441,9 +438,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <div class="form-group">
                                         <label>Role</label>
                                         <select class="select" name="role">
-                                            <option>Select</option>
-                                            <option>Role</option>
-                                            <option>Role1</option>
+                                            <option disabled selected>Select</option>
+                                            <option value="Admin">Admin</option>
+                                            <option value="User">User</option>
                                         </select>
                                     </div>
                                 </div>
@@ -467,7 +464,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                                 <div class="col-lg-12">
                                     <a class="btn btn-submit me-2" onclick="document.getElementById('create_user').submit();">Create</a>
-                                    <!-- <input type="submit" name="submit" class="btn btn-submit me-2" value="Login"><br> -->
                                     <a class="btn btn-cancel" href="userlists">Cancel</a>
                                 </div>
                             </div>
