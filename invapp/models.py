@@ -25,7 +25,8 @@ class CustomUser(AbstractUser):
 class Categories(models.Model):
     name = models.CharField(max_length=255, unique=True)
     desc = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)  # Capture current time with timezone support
+    created_at = models.DateTimeField(default=timezone.now)  
+    category_code = models.CharField(max_length=500, default=generate_random_text, unique=True)  # 500-character text
 
     def __str__(self):
         return self.name

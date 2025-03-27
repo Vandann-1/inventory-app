@@ -170,7 +170,8 @@ def categories(request):
                 "id": categories["id"],
                 "name": categories["name"],
                 "desc": categories["desc"],
-                "created_on": categories["created_at"]
+                "created_on": categories["created_at"],
+                "category_code": categories["category_code"]
             })
         return Response({"Categories": data})   # Return formatted data
 
@@ -194,8 +195,7 @@ def categories(request):
         # Create Category
         category = Categories.objects.create(
             name=category_name,
-            desc=category_desc,
-            created_at=current_time
+            desc=category_desc
         )
         serializer = CategorySerializer(category)
 
@@ -253,18 +253,33 @@ def users(request):
 
     return Response({"users": data})  # Return formatted data
 
+# Single or Bulk Delete of any thing
 @api_view(['POST'])
 def bulk_delete(request):
-    user_codes = request.data.get('user_codes', [])
-    if not user_codes:
-        return Response({"message": "No users selected for deletion."}, status=400)
+    type = request.data.get('type')
+    if type == 'categories':
+        category_codes = request.data.get('category_codes', [])
+        if not category_codes:
+            return Response({"message": "No categories selected for deletion."}, status=400)
 
-    deleted_count, _ = CustomUser.objects.filter(user_code__in=user_codes).delete()
+        deleted_count, _ = Categories.objects.filter(category_code__in=category_codes).delete()
 
-    if deleted_count == 0:
-        return Response({"message": "No matching users found to delete."}, status=404)
+        if deleted_count == 0:
+            return Response({"message": "No matching categories found to delete."}, status=404)
 
-    return Response({"success": True, "message": "Selected users deleted successfully."})
+        return Response({"success": True, "message": "Selected categories deleted successfully."})
+        
+    elif type == 'users':
+        user_codes = request.data.get('user_codes', [])
+        if not user_codes:
+            return Response({"message": "No users selected for deletion."}, status=400)
+
+        deleted_count, _ = CustomUser.objects.filter(user_code__in=user_codes).delete()
+
+        if deleted_count == 0:
+            return Response({"message": "No matching users found to delete."}, status=404)
+
+        return Response({"success": True, "message": "Selected users deleted successfully."})
 
 
 
@@ -285,7 +300,7 @@ def user_management(request):
         user.is_active = True if action == 'active' else False
         user.save()
 
-        status_message = "activated" if user.is_active else "deactivated"
+        status_message = "activated" if user.is_active else "restricted"
         return Response({"message": f"User {status_message} successfully"}, status=200)
 
     except CustomUser.DoesNotExist:
