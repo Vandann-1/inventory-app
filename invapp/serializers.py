@@ -6,9 +6,7 @@ from .models import Categories
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email','password','username','mobile_no','is_active']
-        
-
+        fields = ['id', 'email','password','username','mobile_no','role','is_active','user_code']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,7 +14,4 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 
-""" class CustomUserSerializer(serializers.ModelSerializer):  # for see user data in admin panel
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email']      """          
+     
