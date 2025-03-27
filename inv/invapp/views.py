@@ -7,10 +7,10 @@ from rest_framework import status
 from django.core.files.storage import default_storage
 
 # serializer================================
-from .serializers import UserSerializer, CategorySerializer , ProductSerializer
+from .serializers import UserSerializer, CategorySerializer , ProductSerializer , SupplierSerializer
 #=============================================
 
-from .models import Categories, CustomUser , Product
+from .models import Categories, CustomUser , Product , Supplier
 from django.utils import timezone
 import pytz
 
@@ -318,5 +318,21 @@ def product_list(request):
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
             product = serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+#  for supplier
+@api_view(['GET', 'POST'])
+def supplier_list(request):
+    if request.method == 'GET':
+        suppliers = Supplier.objects.all()
+        serializer = SupplierSerializer(suppliers, many=True)
+        return Response(serializer.data)
+    
+    if request.method == 'POST':
+        serializer = SupplierSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
