@@ -3,12 +3,25 @@ import string
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
+from django.db.utils import OperationalError
+import pytz
 
 # To generate alphanumeric code
 def generate_random_text(length=500):
     # Generate a random alphanumeric string of the given length.
     characters = string.ascii_letters + string.digits
     return ''.join(random.choices(characters, k=length))
+
+def generate_category_code():
+    try:
+        latest_category = Categories.objects.order_by('-id').first()
+        if latest_category and latest_category.custom_code:
+            last_code = int(latest_category.custom_code.split('-')[-1])
+            return f"CT-{last_code + 1:03d}"
+    except OperationalError:
+        # This prevents errors during migrations
+        return "CT-001"
+    return "CT-001"
 
 # for user registration using CustomUser
 class CustomUser(AbstractUser):
@@ -21,15 +34,37 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
+
 # Categories model
 class Categories(models.Model):
     name = models.CharField(max_length=255, unique=True)
     desc = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)  # Capture current time with timezone support
+    category_code = models.CharField(max_length=500, default=generate_random_text, unique=True)  # 500-character text
+    custom_code = models.CharField(max_length=10, unique=True, default=generate_category_code)  
 
-    def __str__(self):
-        return self.name
+    def save(self, *args, **kwargs):
+        india_tz = pytz.timezone('Asia/Kolkata')
+        self.created_at = timezone.now().astimezone(india_tz)
+        super().save(*args, **kwargs)
     
+
+class SubCategory(models.Model):
+        category = models.ForeignKey(Categories, on_delete=models.CASCADE, related_name="subcategories")
+        category_name = models.CharField(max_length=255)  
+        category_code = models.CharField(max_length=500)  
+        # subcategory_code = models.CharField(max_length=50, unique=True)
+        description = models.TextField()
+     
+        def save(self, *args, **kwargs):
+            """Automatically sync category name and category code from the related Category model."""
+            if self.category:
+                self.category_name = self.category.name
+                self.category_code = self.category.category_code
+            super().save(*args, **kwargs)
+
+        def __str__(self):
+             return f" {self.description}"
     
 #  product  model
 

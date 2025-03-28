@@ -7,7 +7,7 @@ from rest_framework import status
 from django.core.files.storage import default_storage
 
 # serializer================================
-from .serializers import UserSerializer, CategorySerializer , ProductSerializer , SupplierSerializer
+from .serializers import UserSerializer, CategorySerializer , ProductSerializer , SupplierSerializer , SubCategorySerializer
 #=============================================
 
 from .models import Categories, CustomUser , Product , Supplier
@@ -148,7 +148,7 @@ def register(request):
             mobile_no=mobile_no
         )
         
-        refresh = RefreshToken.for_user(user)
+        refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
         user_data = UserSerializer(user).data
 
         return Response({
@@ -206,16 +206,30 @@ def users(request):
 
 @api_view(['POST'])
 def bulk_delete(request):
-    user_codes = request.data.get('user_codes', [])
-    if not user_codes:
-        return Response({"message": "No users selected for deletion."}, status=400)
+    type = request.data.get('type')
+    if type == 'categories':
+        category_codes = request.data.get('category_codes', [])
+        if not category_codes:
+            return Response({"message": "No categories selected for deletion."}, status=400)
 
-    deleted_count, _ = CustomUser.objects.filter(user_code__in=user_codes).delete()
+        deleted_count, _ = Categories.objects.filter(category_code__in=category_codes).delete()
 
-    if deleted_count == 0:
-        return Response({"message": "No matching users found to delete."}, status=404)
+        if deleted_count == 0:
+            return Response({"message": "No matching categories found to delete."}, status=404)
 
-    return Response({"success": True, "message": "Selected users deleted successfully."})
+        return Response({"success": True, "message": "Selected categories deleted successfully."})
+        
+    elif type == 'users':
+        user_codes = request.data.get('user_codes', [])
+        if not user_codes:
+            return Response({"message": "No users selected for deletion."}, status=400)
+
+        deleted_count, _ = CustomUser.objects.filter(user_code__in=user_codes).delete()
+
+        if deleted_count == 0:
+            return Response({"message": "No matching users found to delete."}, status=404)
+
+        return Response({"success": True, "message": "Selected users deleted successfully."})
 
 
 
@@ -249,49 +263,27 @@ def user_management(request):
     
 # add categories for  
    
-@api_view(['GET', 'POST'])
-def categories(request):                        
-    if request.method == 'GET':
-        # Retrieve all categories
-        categories = Categories.objects.all()
-        serializer = CategorySerializer(categories, many=True)
 
-        data = []
-        for categories in serializer.data:
-            data.append({
-                "id": categories["id"],
-                "name": categories["name"],
-                "desc": categories["desc"],
-                "created_on": categories["created_at"]
-            })
-        return Response({"Categories": data})   # Return formatted data
-
-    elif request.method == 'POST':
+""" @api_view(['GET', 'POST'])
+def categories(request):
+    if request.method == 'POST':
         category_name = request.data.get('category_name')
         category_desc = request.data.get('category_desc')
 
-
         # Validation
         if not category_name or category_desc is None:
-            return Response({"message": "All fields are required"}, status=404)
+            return Response({"message": "All fields are required"}, status=400)
 
         if Categories.objects.filter(name=category_name).exists():
             return Response({"message": "Category with the same name already exists"}, status=409)
-        
-        # Creating category
-        # Get India Time Zone
-        india_tz = pytz.timezone('Asia/Kolkata')
-        current_time = timezone.now().astimezone(india_tz)
 
         # Create Category
         category = Categories.objects.create(
             name=category_name,
-            desc=category_desc,
-            created_at=current_time
+            desc=category_desc
         )
         serializer = CategorySerializer(category)
 
-        # Token for user if authenticated
         refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
 
         return Response({
@@ -299,14 +291,199 @@ def categories(request):
             "token": str(refresh.access_token),
             "refresh": str(refresh),
             "data": serializer.data
-            }, status=201)
-    
-    # return list like users
-    # add function for production
+        }, status=201)
 
-# To show the list of all users and if user_code is provided, fetch particular user
+    # Handle GET Requests
+    category_code = request.GET.get('category_code')
 
-api_view(['GET', 'POST'])
+    if category_code:
+        try:
+            category = Categories.objects.get(category_code=category_code)
+            serializer = CategorySerializer(category)
+            return Response(serializer.data)
+        except Categories.DoesNotExist:
+            return Response({"message": "Category not found"}, status=404)
+
+    # Retrieve All Categories
+    categories = Categories.objects.all()
+    serializer = CategorySerializer(categories, many=True)
+    return Response({"Categories": serializer.data})
+
+# To show the list of all product and if product_code is provided, fetch particular user
+ """
+
+
+
+
+@api_view(['GET', 'POST'])
+def categories(request):
+    category_code = request.data.get('category_code')
+    if request.method == 'POST':
+        try:
+            category_name = request.data.get('category_name')
+            category_desc = request.data.get('category_desc')
+
+            # Validation
+            if not category_name or category_desc is None:
+                return Response({"message": "All fields are required"}, status=400)
+
+            # Check if user_code is provided for update
+            if category_code:
+                try:
+                    category = Categories.objects.get(category_code=category_code)
+                    
+                    # Validation
+                    # Check for duplicates excluding current category using primary key (id)
+                    if Categories.objects.filter(name=category_name).exclude(id=category.id).exists():
+                        return Response({"message": "Category with the same name already exists"}, status=409)
+
+
+                    # Update category data
+                    category.name = category_name
+                    category.desc = category_desc
+
+                    category.save()
+                    category_data = CategorySerializer(category).data
+                    refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
+                    
+                    return Response({
+                        "message": "Category updated successfully!",
+                        "token": str(refresh.access_token),
+                        "refresh": str(refresh), 
+                        "category": category_data}, status=status.HTTP_200_OK)
+                
+                except User.DoesNotExist:
+                    return Response({"message": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Check for duplicate name during new category creation
+            # Validation
+            if not category_name or category_desc is None:
+                return Response({"message": "All fields are required"}, status=400)
+
+            if Categories.objects.filter(name=category_name).exists():
+                return Response({"message": "Category with the same name already exists"}, status=409)
+
+            # Create new category
+
+            category = Categories.objects.create(
+                name = category_name,
+                desc = category_desc
+            )
+            
+            refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
+            category_data = CategorySerializer(category).data
+
+            return Response({
+                "message": "Category Created Successfully!",
+                "token": str(refresh.access_token),
+                "refresh": str(refresh),
+                "category": category_data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"message": "Category creations failed", "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    elif request.method == 'GET':
+        # If user_code is provided, fetch particular user
+        category_code = request.GET.get('category_code')
+
+        if category_code:
+            try:
+                category = Categories.objects.get(category_code=category_code)
+                category_data = CategorySerializer(category).data
+                return Response({
+                    "id": category_data["id"],
+                    "name": category_data["name"],
+                    "desc": category_data["desc"],
+                    "created_at": category_data["created_at"],
+                    "custom_code": category_data["custom_code"],
+                    "category_code": category_data["category_code"]
+                })
+            except CustomUser.DoesNotExist:
+                return Response({"message": "Category not found"}, status=404)
+        
+        # Fetch all users and serialize
+        category = Categories.objects.all()
+        serializer = CategorySerializer(category, many=True)
+
+        # Loop through serialized data (if you want to format it manually)
+        data = []
+        for category in serializer.data:
+            data.append({
+                "id": category["id"],
+                "name": category["name"],
+                "desc": category["desc"],
+                "created_at": category["created_at"],
+                "custom_code": category["custom_code"],
+                "category_code": category["category_code"]
+            })
+
+        return Response({"Categories": data})  # Return formatted data
+
+
+
+
+@api_view(['GET', 'POST'])
+def SubCategory(request):
+    if request.method == 'POST':
+        try:
+            category_id = request.data.get('category')  # Foreign key ID
+            # subcategory_code = request.data.get('subcategory_code')
+            description = request.data.get('description')
+
+            if not category_id or not subcategory_code or not description:
+                return Response({"message": "All fields are required"}, status=400)
+
+            try:
+                category = Categories.objects.get(id=category_id)
+            except Categories.DoesNotExist:
+                return Response({"message": "Category not found"}, status=404)
+
+            if SubCategory.objects.filter(subcategory_code=subcategory_code).exists():
+                return Response({"message": "SubCategory with this code already exists"}, status=409)
+
+            subcategory = SubCategory.objects.create(
+                category=category,
+                category_name=category.name,  # Store category name
+                category_code=category.category_code,  # Store category code
+                # subcategory_code=subcategory_code,
+                description=description
+            )
+
+            subcategory_data = SubCategorySerializer(subcategory).data
+            return Response({
+                "message": "SubCategory Created Successfully!",
+                "subcategory": subcategory_data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"message": "SubCategory creation failed", "error": str(e)}, status=500)
+
+    elif request.method == 'GET':
+        # subcategory_code = request.GET.get('subcategory_code')
+
+        if subcategory_code:
+            try:
+                subcategory = SubCategory.objects.get(subcategory_code=subcategory_code)
+                subcategory_data = SubCategorySerializer(subcategory).data
+                return Response(subcategory_data)
+            except SubCategory.DoesNotExist:
+                return Response({"message": "SubCategory not found"}, status=404)
+
+        subcategories = SubCategory.objects.all()
+        serializer = SubCategorySerializer(subcategories, many=True)
+
+        return Response({"SubCategories": serializer.data})
+
+
+
+
+
+
+
+
+
+@api_view(['GET', 'POST'])
 @parser_classes([MultiPartParser, FormParser])
 def product_list(request):
     if request.method == 'GET':
