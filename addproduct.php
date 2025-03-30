@@ -253,11 +253,11 @@
                                     Product</span> <span class="menu-arrow"></span></a>
                             <ul>
                                 <li><a href="productlist.html">Product List</a></li>
-                                <li><a href="addproduct.html">Add Product</a></li>
+                                <li><a href="addproduct.html" class="active">Add Product</a></li>
                                 <li><a href="categorylist.html">Category List</a></li>
                                 <li><a href="addcategory.html">Add Category</a></li>
                                 <li><a href="subcategorylist.html">Sub Category List</a></li>
-                                <li><a href="subaddcategory.html" class="active">Add Sub Category</a></li>
+                                <li><a href="subaddcategory.html">Add Sub Category</a></li>
                                 <li><a href="brandlist.html">Brand List</a></li>
                                 <li><a href="addbrand.html">Add Brand</a></li>
                                 <li><a href="importproduct.html">Import Products</a></li>
@@ -482,32 +482,71 @@
             <div class="content">
                 <div class="page-header">
                     <div class="page-title">
-                        <h4>Product Add sub Category</h4>
-                        <h6>Create new product Category</h6>
+                        <h4>Product Add</h4>
+                        <h6>Create new product</h6>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="col-lg-3 col-sm-6 col-12">
                                 <div class="form-group">
-                                    <label>Parent Category</label>
-                                    <select class="select">
-                                        <option>Choose Category</option>
-                                        <option>Category</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 col-sm-6 col-12">
-                                <div class="form-group">
-                                    <label>Category Name</label>
+                                    <label>Product Name</label>
                                     <input type="text">
                                 </div>
                             </div>
-                            <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="col-lg-3 col-sm-6 col-12">
                                 <div class="form-group">
-                                    <label>Category Code</label>
+                                    <label>Category</label>
+                                    <select class="select">
+                                        <option>Choose Category</option>
+                                        <option>Computers</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Sub Category</label>
+                                    <select class="select">
+                                        <option>Choose Sub Category</option>
+                                        <option>Fruits</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Brand</label>
+                                    <select class="select">
+                                        <option>Choose Brand</option>
+                                        <option>Brand</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Unit</label>
+                                    <select class="select">
+                                        <option>Choose Unit</option>
+                                        <option>Unit</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>SKU</label>
+                                    <input type="text">
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Minimum Qty</label>
+                                    <input type="text">
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Quantity</label>
                                     <input type="text">
                                 </div>
                             </div>
@@ -517,9 +556,55 @@
                                     <textarea class="form-control"></textarea>
                                 </div>
                             </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Tax</label>
+                                    <select class="select">
+                                        <option>Choose Tax</option>
+                                        <option>2%</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Discount Type</label>
+                                    <select class="select">
+                                        <option>Percentage</option>
+                                        <option>10%</option>
+                                        <option>20%</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label>Price</label>
+                                    <input type="text">
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <div class="form-group">
+                                    <label> Status</label>
+                                    <select class="select">
+                                        <option>Closed</option>
+                                        <option>Open</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label> Product Image</label>
+                                    <div class="image-upload">
+                                        <input type="file">
+                                        <div class="image-uploads">
+                                            <img src="assets/img/icons/upload.svg" alt="img">
+                                            <h4>Drag and drop a file to upload</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-lg-12">
                                 <a href="javascript:void(0);" class="btn btn-submit me-2">Submit</a>
-                                <a href="subcategorylist.html" class="btn btn-cancel">Cancel</a>
+                                <a href="productlist.html" class="btn btn-cancel">Cancel</a>
                             </div>
                         </div>
                     </div>

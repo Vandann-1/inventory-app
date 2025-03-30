@@ -1,4 +1,5 @@
 <?php
+ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
 require 'api.php';
 require 'function.inc.php';
@@ -8,13 +9,18 @@ if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION[
     // Redirect to login page
     header('Location: login');
     exit();
+} else {
+    if ($_SESSION['role'] !== 'Admin') {
+        header('Location: index');
+        exit();
+    }
 }
 
 // To show success msg after creation of user and reload
 if (isset($_SESSION['success_msg'])) {
     $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
-         . $_SESSION['success_msg'] . 
-         "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        . $_SESSION['success_msg'] .
+        "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
     </div>";
     unset($_SESSION['success_msg']); // Clear the session after storing in a variable
 }
@@ -39,7 +45,7 @@ if (isset($_GET['editid']) && !empty($_GET['editid'])) {
             An error occurred while fetching user data.
             <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
             </div>";
-        $user_data = []; 
+        $user_data = [];
     }
 }
 
@@ -51,19 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = validate_input($_POST['password']);
     $confirm_password = validate_input($_POST['confirm_password']);
 
-    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password) || empty($role)){
+    if (empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password) || empty($role)) {
         $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
         All fields are required!
         <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
         </div>";
-    }else{
-        if(!validateMobile($mobile)){
+    } else {
+        if (!validateMobile($mobile)) {
             $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
             Enter a valid Mobile Number!
             <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
             </div>";
-        }else{
-            if($password == $confirm_password){
+        } else {
+            if ($password == $confirm_password) {
                 $response = sendRequestToDjango('register/', [
                     'user_code' => $edit_id,
                     'full_name' => $full_name,
@@ -73,27 +79,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'mobile_no' => $mobile
                 ], $_SESSION['token']);
 
-            
+
                 if (isset($response['token']) && isset($_SESSION['token'])) {
                     $_SESSION['success_msg'] = htmlspecialchars($response['message']);
                     session_write_close(); // to ensure that session is saved before redirect
                     $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
-                    header("location: $file_name"."?editid=" . urlencode($edit_id)); // Redirect without .php
+                    header("location: $file_name" . "?editid=" . urlencode($edit_id)); // Redirect without .php
                     exit();
                 } else {
                     $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                    " . htmlspecialchars($response['message'])."
+                    " . htmlspecialchars($response['message']) . "
                     <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
                     </div>";  // default $response['message'];
                 }
-            }else{
+            } else {
                 $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
                 The passwords you entered do not match. Please ensure both fields contain the same password.
                 <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
                 </div>";
             }
         }
-
     }
 }
 
@@ -123,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-    
+
     <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
@@ -398,13 +403,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
-                        <li class="submenu">
-                            <a href="javascript:void(0);"  class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
-                            <ul>
-                                <li><a href="newuser" class="active">New User </a></li>
-                                <li><a href="userlists">Users List</a></li>
-                            </ul>
-                        </li>
+                        <?php if ($_SESSION['role'] == 'Admin') { ?>
+                            <li class="submenu">
+                                <a href="javascript:void(0);" class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                                <ul>
+                                    <li><a href="newuser" class="active">New User </a></li>
+                                    <li><a href="userlists">Users List</a></li>
+                                </ul>
+                            </li>
+                        <?php } ?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>
@@ -432,29 +439,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <div class="card">
                     <div class="card-body">
-                    <?php 
-                        if(isset($msg)){
+                        <?php if (isset($msg)) {
                             echo $msg;
-                        } 
-                        ?>
+                        } ?>
                         <form method="post" id="edit_user">
                             <div class="row">
                                 <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
                                         <label>Full Name</label>
-                                        <input type="text" placeholder="Enter user full name" name="full_name" value="<?php echo $user_data['username']; ?>">
+                                        <input type="text" placeholder="Enter user full name" name="full_name" value="<?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                                                                            echo $user_data['username'];
+                                                                                                                        } ?>">
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
                                         <label>Email</label>
-                                        <input type="text" placeholder="Enter a user email id" name="email" value="<?php echo $user_data['email']; ?>">
+                                        <input type="text" placeholder="Enter a user email id" name="email" value="<?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                                                                            echo $user_data['email'];
+                                                                                                                        } ?>">
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-sm-12 col-12">
                                     <div class="form-group">
                                         <label>Mobile</label>
-                                        <input type="text" name="mobile" placeholder="Enter user mobile no" pattern="[6-9][0-9]{9}" maxlength="10" value="<?php echo $user_data['mobile_no']; ?>">
+                                        <input type="text" name="mobile" placeholder="Enter user mobile no" pattern="[6-9][0-9]{9}" maxlength="10" value="<?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                                                                            echo $user_data['mobile_no'];
+                                                                                                                        } ?>">
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-sm-12 col-12">

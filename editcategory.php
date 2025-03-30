@@ -9,81 +9,78 @@ if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION[
     // Redirect to login page
     header('Location: login');
     exit();
-}else{
-    if($_SESSION['role'] !== 'Admin'){
+} else {
+    if ($_SESSION['role'] !== 'Admin') {
         header('Location: index');
         exit();
     }
 }
 
-$msg = '';
-$response = '';
-
 // To show success msg after creation of user and reload
 if (isset($_SESSION['success_msg'])) {
     $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
-         . $_SESSION['success_msg'] . 
-         "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+        . $_SESSION['success_msg'] .
+        "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
     </div>";
     unset($_SESSION['success_msg']); // Clear the session after storing in a variable
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $full_name = validate_input($_POST['full_name']);
-    $mobile = validate_input($_POST['mobile']);
-    $email = validate_input($_POST['email']);
-    $role = validate_input($_POST['role']);
-    $password = validate_input($_POST['password']);
-    $confirm_password = validate_input($_POST['confirm_password']);
+// Check if editid are set
+if (isset($_GET['editid']) && !empty($_GET['editid'])) {
+    $edit_id = filter_input(INPUT_GET, 'editid', FILTER_SANITIZE_SPECIAL_CHARS);
 
-    if(empty($full_name) || empty($mobile) || empty($email) || empty($password) || empty($confirm_password) || empty($role)){
+    // Sending data to Django
+    $response = sendRequestToDjango('categories/?category_code=' . $edit_id, [], $_SESSION['token'], 'GET');
+
+    // Handling the response
+    if ($response) {
+        $category_data = $response;
+
+        if (isset($user_data['message'])) {
+            $msg = htmlspecialchars($category_data['message']);
+            $category_data = []; // Reset data to prevent errors
+        }
+    } else {
         $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
+            An error occurred while fetching category data.
+            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>";
+        $category_data = [];
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $category_name = validate_input($_POST['category_name']);
+    $category_desc = validate_input($_POST['category_desc']);
+
+    if (empty($category_name) || empty($category_desc)) {
+        echo "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
         All fields are required!
         <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
         </div>";
-    }else{
-        if(!validateMobile($mobile)){
-            $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-            Enter a valid Mobile Number!
-            <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-            </div>";
-        }else{
-            if($password == $confirm_password){
-                $response = sendRequestToDjango('register/', [
-                    'full_name' => $full_name,
-                    'email' => $email,
-                    'role' => $role,
-                    'password' => $password,
-                    'mobile_no' => $mobile
-                ], $_SESSION['token']);
-            
-                //For Debugging
-                /* echo "<pre>";
-                print_r($response);
-                echo "</pre>"; */
-            
-                if (isset($response['token']) && isset($_SESSION['token'])) {
-                    $_SESSION['success_msg'] = htmlspecialchars($response['message']);
-                    session_write_close(); // to ensure that session is saved before redirect
-                    $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
-                    header("location: $file_name"); // Redirect without .php
-                    exit();
-                } else {
-                    $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                    " . htmlspecialchars($response['message'])."
-                    <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-                    </div>";  // default $response['message'];
-                }
-            }else{
-                $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>
-                The passwords you entered do not match. Please ensure both fields contain the same password.
-                <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
-                </div>";
-            }
-        }
+    } else {
+        $response = sendRequestToDjango('categories/', [
+            'category_code' => $edit_id,
+            'category_name' => $category_name,
+            'category_desc' => $category_desc
+        ], $_SESSION['token']);
 
+        // Check if response contains success
+        if (isset($response['token']) && isset($_SESSION['token'])) {
+            $_SESSION['success_msg'] = $response['message'];
+            session_write_close(); // to ensure that session is saved before redirect
+            $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+            header("location: $file_name"."?editid=".$edit_id); // Redirect without .php
+            exit();
+        } else {
+            $msg = "<div class='alert alert-danger alert-dismissible fade show' role='alert'>"
+                . htmlspecialchars($response['message']) .
+                "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+            </div>";
+        }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -93,11 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="description" content="POS - Bootstrap Admin Template">
-    <meta name="keywords"
-        content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
+    <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
     <meta name="author" content="Dreamguys - Bootstrap Admin Template">
     <meta name="robots" content="noindex, nofollow">
-    <title>Create User | TS</title>
+    <title>Edit Category | TS</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.jpg">
 
@@ -111,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-    
     <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
@@ -127,10 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="header">
 
             <div class="header-left active">
-                <a href="index" class="logo">
+                <a href="index.html" class="logo">
                     <img src="assets/img/logo.png" alt="">
                 </a>
-                <a href="index" class="logo-small">
+                <a href="index.html" class="logo-small">
                     <img src="assets/img/logo-small.png" alt="">
                 </a>
                 <a id="toggle_btn" href="javascript:void(0);">
@@ -166,8 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <li class="nav-item dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
-                        <img src="assets/img/icons/notification-bing.svg" alt="img"> <span
-                            class="badge rounded-pill">4</span>
+                        <img src="assets/img/icons/notification-bing.svg" alt="img"> <span class="badge rounded-pill">4</span>
                     </a>
                     <div class="dropdown-menu notifications">
                         <div class="topnav-dropdown-header">
@@ -177,82 +171,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="noti-content">
                             <ul class="notification-list">
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-02.jpg">
                                             </span>
                                             <div class="media-body flex-grow-1">
-                                                <p class="noti-details"><span class="noti-title">John Doe</span> added
-                                                    new task <span class="noti-title">Patient appointment booking</span>
-                                                </p>
-                                                <p class="noti-time"><span class="notification-time">4 mins ago</span>
-                                                </p>
+                                                <p class="noti-details"><span class="noti-title">John Doe</span> added new task <span class="noti-title">Patient appointment booking</span></p>
+                                                <p class="noti-time"><span class="notification-time">4 mins ago</span></p>
                                             </div>
                                         </div>
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-03.jpg">
                                             </span>
                                             <div class="media-body flex-grow-1">
-                                                <p class="noti-details"><span class="noti-title">Tarah Shropshire</span>
-                                                    changed the task name <span class="noti-title">Appointment booking
-                                                        with payment gateway</span></p>
-                                                <p class="noti-time"><span class="notification-time">6 mins ago</span>
-                                                </p>
+                                                <p class="noti-details"><span class="noti-title">Tarah Shropshire</span> changed the task name <span class="noti-title">Appointment booking with payment gateway</span></p>
+                                                <p class="noti-time"><span class="notification-time">6 mins ago</span></p>
                                             </div>
                                         </div>
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-06.jpg">
                                             </span>
                                             <div class="media-body flex-grow-1">
-                                                <p class="noti-details"><span class="noti-title">Misty Tison</span>
-                                                    added <span class="noti-title">Domenic Houston</span> and <span
-                                                        class="noti-title">Claire Mapes</span> to project <span
-                                                        class="noti-title">Doctor available module</span></p>
-                                                <p class="noti-time"><span class="notification-time">8 mins ago</span>
-                                                </p>
+                                                <p class="noti-details"><span class="noti-title">Misty Tison</span> added <span class="noti-title">Domenic Houston</span> and <span class="noti-title">Claire Mapes</span> to project <span class="noti-title">Doctor available module</span></p>
+                                                <p class="noti-time"><span class="notification-time">8 mins ago</span></p>
                                             </div>
                                         </div>
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-17.jpg">
                                             </span>
                                             <div class="media-body flex-grow-1">
-                                                <p class="noti-details"><span class="noti-title">Rolland Webber</span>
-                                                    completed task <span class="noti-title">Patient and Doctor video
-                                                        conferencing</span></p>
-                                                <p class="noti-time"><span class="notification-time">12 mins ago</span>
-                                                </p>
+                                                <p class="noti-details"><span class="noti-title">Rolland Webber</span> completed task <span class="noti-title">Patient and Doctor video conferencing</span></p>
+                                                <p class="noti-time"><span class="notification-time">12 mins ago</span></p>
                                             </div>
                                         </div>
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-13.jpg">
                                             </span>
                                             <div class="media-body flex-grow-1">
-                                                <p class="noti-details"><span class="noti-title">Bernardo Galaviz</span>
-                                                    added new task <span class="noti-title">Private chat module</span>
-                                                </p>
-                                                <p class="noti-time"><span class="notification-time">2 days ago</span>
-                                                </p>
+                                                <p class="noti-details"><span class="noti-title">Bernardo Galaviz</span> added new task <span class="noti-title">Private chat module</span></p>
+                                                <p class="noti-time"><span class="notification-time">2 days ago</span></p>
                                             </div>
                                         </div>
                                     </a>
@@ -260,21 +238,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </ul>
                         </div>
                         <div class="topnav-dropdown-footer">
-                            <a href="activities">View all Notifications</a>
+                            <a href="activities.html">View all Notifications</a>
                         </div>
                     </div>
                 </li>
 
                 <li class="nav-item dropdown has-arrow main-drop">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-user"></i>
-                            <span class="status online"></span></span>
+                        <i class="fa-solid fa-user"></i>
+                        <span class="status online"></span></span>
                     </a>
                     <div class="dropdown-menu menu-drop-user">
                         <div class="profilename">
                             <div class="profileset">
                                 <i class="fa-solid fa-user"></i>
-                                    <span class="status online"></span></span>
+                                <span class="status online"></span></span>
                                 <div class="profilesets">
                                     <h6><?= htmlspecialchars($_SESSION['username']); ?></h6>
                                 </div>
@@ -291,12 +269,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
             <div class="dropdown mobile-user-menu">
-                <a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"
-                    aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+                <a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
                 <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" href="profile">My Profile</a>
-                    <a class="dropdown-item" href="generalsettings">Settings</a>
-                    <a class="dropdown-item" href="signin">Logout</a>
+                    <a class="dropdown-item" href="profile.html">My Profile</a>
+                    <a class="dropdown-item" href="generalsettings.html">Settings</a>
+                    <a class="dropdown-item" href="signin.html">Logout</a>
                 </div>
             </div>
 
@@ -311,12 +288,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <a href="index"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
                         </li>
                         <li class="submenu">
-                            <a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
                             <ul>
                                 <li><a href="productlist">Product List</a></li>
                                 <li><a href="addproduct">Add Product</a></li>
                                 <li><a href="categorylist">Category List</a></li>
-                                <li><a href="addcategory">Add Category</a></li>
+                                <li><a href="addcategory" class="active">Add Category</a></li>
                                 <li><a href="subcategorylist">Sub Category List</a></li>
                                 <li><a href="subaddcategory">Add Sub Category</a></li>
                                 <li><a href="brandlist">Brand List</a></li>
@@ -383,9 +360,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </li>
                         <?php if($_SESSION['role'] == 'Admin') { ?>
                         <li class="submenu">
-                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
                             <ul>
-                                <li><a href="newuser" class="active">New User </a></li>
+                                <li><a href="newuser">New User </a></li>
                                 <li><a href="userlists">Users List</a></li>
                             </ul>
                         </li>
@@ -410,69 +387,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="content">
                 <div class="page-header">
                     <div class="page-title">
-                        <h4>User Management</h4>
-                        <h6>Add/Create User</h6>
+                        <h4>Product Edit Category</h4>
+                        <h6>Edit a product Category</h6>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-body">
-                        <?php 
-                        if(isset($msg)){
+                        <?php if (isset($msg)) {
                             echo $msg;
-                        } 
-                        ?>
-                        <form method="post" id="create_user">
+                        } ?>
+                        <form method="post" id="edit_category">
                             <div class="row">
-                                <div class="col-lg-6 col-sm-12 col-12">
+                                <div class="col-lg-6 col-sm-6 col-12">
                                     <div class="form-group">
-                                        <label>Full Name</label>
-                                        <input type="text" placeholder="Enter user full name" name="full_name">
+                                        <label>Category Name</label>
+                                        <input type="text" name="category_name" placeholder="Enter category name" value="<?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                                                                                echo $category_data['name'];
+                                                                                                                            } ?>">
                                     </div>
                                 </div>
-                                <div class="col-lg-6 col-sm-12 col-12">
+                                <div class="col-lg-6 col-sm-6 col-12">
                                     <div class="form-group">
-                                        <label>Email</label>
-                                        <input type="text" placeholder="Enter a user email id" name="email">
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 col-sm-12 col-12">
-                                    <div class="form-group">
-                                        <label>Mobile</label>
-                                        <input type="text" name="mobile" placeholder="Enter user mobile no" pattern="[6-9][0-9]{9}" maxlength="10">
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 col-sm-12 col-12">
-                                    <div class="form-group">
-                                        <label>Role</label>
-                                        <select class="select" name="role">
-                                            <option disabled selected>Select</option>
-                                            <option value="Admin">Admin</option>
-                                            <option value="User">User</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 col-sm-12 col-12">
-                                    <div class="form-group">
-                                        <label>Password</label>
-                                        <div class="pass-group">
-                                            <input type="password" placeholder="Enter user password" name="password" class=" pass-input">
-                                            <span class="fas toggle-password fa-eye-slash"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 col-sm-12 col-12">
-                                    <div class="form-group">
-                                        <label>Confirm Password</label>
-                                        <div class="pass-group">
-                                            <input type="password" placeholder="Confirm user password" class=" pass-inputs" name="confirm_password">
-                                            <span class="fas toggle-passworda fa-eye-slash"></span>
-                                        </div>
+                                        <label>Category Code</label>
+                                        <input type="text" value="<?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                        echo $category_data['custom_code'];
+                                                                    } ?>" disabled>
                                     </div>
                                 </div>
                                 <div class="col-lg-12">
-                                    <a class="btn btn-submit me-2" onclick="document.getElementById('create_user').submit();">Create</a>
-                                    <a class="btn btn-cancel" href="userlists">Cancel</a>
+                                    <div class="form-group">
+                                        <label>Description</label>
+                                        <textarea class="form-control" name="category_desc" placeholder="Enter category description name"><?php if (isset($_GET['editid']) && $_GET['editid'] != '') {
+                                                                                                                                                        echo $category_data['desc'];
+                                                                                                                                                    } ?></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <a class="btn btn-submit me-2" onclick="document.getElementById('edit_category').submit();">Edit </a>
+                                    <a href="categorylist" class="btn btn-cancel">Cancel</a>
                                 </div>
                             </div>
                         </form>

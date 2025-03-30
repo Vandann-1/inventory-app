@@ -1,4 +1,5 @@
 <?php 
+ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
 require 'api.php';
 require 'function.inc.php';
@@ -66,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
     <meta name="author" content="Dreamguys - Bootstrap Admin Template">
     <meta name="robots" content="noindex, nofollow">
-    <title>Dreams Pos admin template</title>
+    <title>Add Category | TS</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.jpg">
 
@@ -132,28 +133,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </form>
                     </div>
                 </li>
-
-
-                <li class="nav-item dropdown has-arrow flag-nav">
-                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);" role="button">
-                        <img src="assets/img/flags/us1.png" alt="" height="20">
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right">
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/us.png" alt="" height="16"> English
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/fr.png" alt="" height="16"> French
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/es.png" alt="" height="16"> Spanish
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/de.png" alt="" height="16"> German
-                        </a>
-                    </div>
-                </li>
-
 
                 <li class="nav-item dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
@@ -241,24 +220,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <li class="nav-item dropdown has-arrow main-drop">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-                        <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
-                            <span class="status online"></span></span>
+                        <i class="fa-solid fa-user"></i>
+                        <span class="status online"></span></span>
                     </a>
                     <div class="dropdown-menu menu-drop-user">
                         <div class="profilename">
                             <div class="profileset">
-                                <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
-                                    <span class="status online"></span></span>
+                                <i class="fa-solid fa-user"></i>
+                                <span class="status online"></span></span>
                                 <div class="profilesets">
-                                    <h6>John Doe</h6>
-                                    <h5>Admin</h5>
+                                    <h6><?= htmlspecialchars($_SESSION['username']); ?></h6>
                                 </div>
                             </div>
                             <hr class="m-0">
                             <a class="dropdown-item" href="profile"> <i class="me-2" data-feather="user"></i> My Profile</a>
                             <a class="dropdown-item" href="generalsettings"><i class="me-2" data-feather="settings"></i>Settings</a>
                             <hr class="m-0">
-                            <a class="dropdown-item logout pb-0" href="signin"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
+                            <a class="dropdown-item logout pb-0" href="logout"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
                         </div>
                     </div>
                 </li>
@@ -355,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
+                        <?php if($_SESSION['role'] == 'Admin') { ?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
                             <ul>
@@ -362,6 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <li><a href="userlists">Users List</a></li>
                             </ul>
                         </li>
+                        <?php }?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>

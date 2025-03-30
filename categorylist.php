@@ -1,4 +1,5 @@
 <?php
+ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
 require 'api.php';
 
@@ -20,6 +21,86 @@ if (isset($response['error'])) {
     //$categoryCount = count($categories); // Get total number of categories
 }
 
+// To show success msg after creation of user and reload
+if (isset($_SESSION['success_msg'])) {
+    $msg = "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
+        . $_SESSION['success_msg'] .
+        "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    </div>";
+    unset($_SESSION['success_msg']); // Clear the session after storing in a variable
+}
+
+// Check if action and requestid are set
+if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !empty($_GET['requestid'])) {
+    $action = filter_input(INPUT_GET, 'ac', FILTER_SANITIZE_SPECIAL_CHARS);
+    $request_id = filter_input(INPUT_GET, 'requestid', FILTER_SANITIZE_SPECIAL_CHARS);
+    $type = filter_input(INPUT_GET, 't', FILTER_SANITIZE_SPECIAL_CHARS);
+
+    if ($action == 'status') {
+        // Sending data to Django
+        $response = sendRequestToDjango('active_inactive/', [
+            "type" => "categories",
+            "action" => $type, // active or inactive
+            "request_code" => $request_id
+        ], $_SESSION['token']);
+
+        // Handling the response
+        if ($response) {
+            $_SESSION['success_msg'] = htmlspecialchars($response['message']);
+            $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+            header("location: $file_name"); // Redirect without .php
+        } else {
+            $msg = "An error occurred while processing your request.";
+        }
+    }
+
+    if ($action == "delete") {
+        $categoryCode = $request_id;
+
+        if (!empty($categoryCode)) {
+            $response = sendRequestToDjango('bulk_delete/', [
+                "type" => "categories",
+                'deletion_codes' => [$categoryCode] 
+            ], $_SESSION['token']);
+
+            if (isset($response['success']) && $response['success'] === true) {
+                $_SESSION['success_msg'] = htmlspecialchars($response['message']);
+                session_write_close();
+                $file_name = basename($_SERVER['PHP_SELF'], ".php");
+                header("location: $file_name");
+                exit();
+            } else {
+                $msg = "<div class='alert alert-danger'>Error: " . htmlspecialchars($response['message'] ?? 'Unknown error') . "</div>";
+            }
+        } else {
+            $msg = "<div class='alert alert-danger'>No category selected for deletion.</div>";
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!empty($_POST['selected_categories'])) {
+        $selectedCategories = $_POST['selected_categories'];
+
+        $response = sendRequestToDjango('bulk_delete/', [
+            "type" => "categories",
+            'deletion_codes' => $selectedCategories
+        ], $_SESSION['token']);
+
+        if (isset($response['success']) && $response['success'] === true) {
+            $_SESSION['success_msg'] =  htmlspecialchars($response['message']);
+            session_write_close(); // to ensure that session is saved before redirect
+            $file_name = basename($_SERVER['PHP_SELF'], ".php"); // Get the filename without extension
+            header("location: $file_name"); // Redirect without .php
+            exit();
+        } else {
+            $msg = "<div class='alert alert-danger'>Error: " . htmlspecialchars($response['message'] ?? 'Unknown error') . "</div>";
+        }
+    } else {
+        $msg = "<div class='alert alert-danger'>No category selected for deletion.</div>";
+    }
+}
+
 ?>
 
 
@@ -33,7 +114,7 @@ if (isset($response['error'])) {
     <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
     <meta name="author" content="Dreamguys - Bootstrap Admin Template">
     <meta name="robots" content="noindex, nofollow">
-    <title>Dreams Pos admin template</title>
+    <title>Category | TS</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.jpg">
 
@@ -47,7 +128,7 @@ if (isset($response['error'])) {
 
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
@@ -97,28 +178,6 @@ if (isset($response['error'])) {
                         </form>
                     </div>
                 </li>
-
-
-                <li class="nav-item dropdown has-arrow flag-nav">
-                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);" role="button">
-                        <img src="assets/img/flags/us1.png" alt="" height="20">
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right">
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/us.png" alt="" height="16"> English
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/fr.png" alt="" height="16"> French
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/es.png" alt="" height="16"> Spanish
-                        </a>
-                        <a href="javascript:void(0);" class="dropdown-item">
-                            <img src="assets/img/flags/de.png" alt="" height="16"> German
-                        </a>
-                    </div>
-                </li>
-
 
                 <li class="nav-item dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
@@ -206,24 +265,23 @@ if (isset($response['error'])) {
 
                 <li class="nav-item dropdown has-arrow main-drop">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-                        <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
-                            <span class="status online"></span></span>
+                        <i class="fa-solid fa-user"></i>
+                        <span class="status online"></span></span>
                     </a>
                     <div class="dropdown-menu menu-drop-user">
                         <div class="profilename">
                             <div class="profileset">
-                                <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
-                                    <span class="status online"></span></span>
+                                <i class="fa-solid fa-user"></i>
+                                <span class="status online"></span></span>
                                 <div class="profilesets">
-                                    <h6>John Doe</h6>
-                                    <h5>Admin</h5>
+                                    <h6><?= htmlspecialchars($_SESSION['username']); ?></h6>
                                 </div>
                             </div>
                             <hr class="m-0">
                             <a class="dropdown-item" href="profile"> <i class="me-2" data-feather="user"></i> My Profile</a>
                             <a class="dropdown-item" href="generalsettings"><i class="me-2" data-feather="settings"></i>Settings</a>
                             <hr class="m-0">
-                            <a class="dropdown-item logout pb-0" href="signin"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
+                            <a class="dropdown-item logout pb-0" href="logout"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
                         </div>
                     </div>
                 </li>
@@ -320,13 +378,15 @@ if (isset($response['error'])) {
                                 <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
-                        <li class="submenu">
-                            <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
-                            <ul>
-                                <li><a href="newuser">New User </a></li>
-                                <li><a href="userlists">Users List</a></li>
-                            </ul>
-                        </li>
+                        <?php if ($_SESSION['role'] == 'Admin') { ?>
+                            <li class="submenu">
+                                <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                                <ul>
+                                    <li><a href="newuser">New User </a></li>
+                                    <li><a href="userlists">Users List</a></li>
+                                </ul>
+                            </li>
+                        <?php } ?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>
@@ -382,6 +442,9 @@ if (isset($response['error'])) {
                                     <li>
                                         <a data-bs-toggle="tooltip" data-bs-placement="top" title="print"><img src="assets/img/icons/printer.svg" alt="img"></a>
                                     </li>
+                                    <li>
+                                        <a data-bs-toggle="tooltip" data-bs-placement="top" title="delete" onclick="confirmBulkDelete()"><img src="assets/img/icons/delete.svg" alt="img" id="deleteBtn"></a>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -423,70 +486,80 @@ if (isset($response['error'])) {
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table  datanew">
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            <label class="checkboxs">
-                                                <input type="checkbox" id="select-all">
-                                                <span class="checkmarks"></span>
-                                            </label>
-                                        </th>
-                                        <th>Category name</th>
-                                        <th>Description</th>
-                                        <th>Created On</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                <?php
-                                foreach ($categories as $category) { 
-                                    $createdAt = $category['created_on']; // Use created_on instead of created_at
-                                
-                                    if (empty($createdAt)) {
-                                        echo "Created At is empty for Category ID: " . htmlspecialchars($category['id']);
-                                        continue;
-                                    }
-                                
-                                    // Handle microseconds with fallback
-                                    $date = DateTime::createFromFormat('Y-m-d\TH:i:s.u\Z', $createdAt);
-                                    
-                                    if ($date === false) {
-                                        echo "Invalid Date for Category ID: " . htmlspecialchars($category['id']) . " with Date: " . htmlspecialchars($createdAt);
-                                        continue;
-                                    }
-                                
-                                    // Convert to IST
-                                    $date->setTimezone(new DateTimeZone('Asia/Kolkata'));
-                                    $formatted_date =  $date->format('Y-m-d h:i:s A');
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <label class="checkboxs">
-                                                <input type="checkbox">
-                                                <span class="checkmarks"></span>
-                                            </label>
-                                        </td>
-                                        <td><?= htmlspecialchars($category['name']); ?></td>
-                                        <td><?= htmlspecialchars($category['desc']); ?></td>
-                                        <td><?= htmlspecialchars($formatted_date); ?></td><!--  Example: 2025-03-25 10:59:51 -->
-                                        <td>
-                                            <a class="me-3" href="editcategory">
-                                                <img src="assets/img/icons/edit.svg" alt="img">
-                                            </a>
-                                            <a class="me-3 confirm-text" href="javascript:void(0);">
-                                                <img src="assets/img/icons/delete.svg" alt="img">
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php } ?>
-                                    
-                                </tbody>
-                            </table>
+                            <form method="post" id="category">
+                                <table class="table  datanew">
+                                    <?php if (isset($msg)) {
+                                        echo $msg;
+                                    } ?>
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                <label class="checkboxs">
+                                                    <input type="checkbox" id="select-all">
+                                                    <span class="checkmarks"></span>
+                                                </label>
+                                            </th>
+                                            <th>Category name</th>
+                                            <th>Category Code</th>
+                                            <th>Description</th>
+                                            <th>Created On</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($categories as $category) {
+                                            
+                                                $createdAt = $category['created_at'] ?? null; // Ensure correct field name
+
+                                                if (!empty($createdAt)) {
+                                                    $date = DateTime::createFromFormat('Y-m-d H:i:s.u', $createdAt) 
+                                                    ?: DateTime::createFromFormat('Y-m-d H:i:s', $createdAt);
+
+                                                } else {
+                                                    $date = false;
+                                                }
+                                            
+                                                $formatted_date = ($date) ? $date->format('Y-m-d h:i A') : "NA"; // Fallback to NA
+                                        ?>
+                                            <tr>
+                                                <td>
+                                                    <label class="checkboxs">
+                                                        <input type="checkbox" class="categoryCheckbox" name="selected_categories[]" value="<?= $category['category_code']; ?>">
+                                                        <span class="checkmarks"></span>
+                                                    </label>
+                                                </td>
+                                                <td><?= htmlspecialchars($category['name']); ?></td>
+                                                <td><?= htmlspecialchars($category['custom_code']); ?></td>
+                                                <td><?= htmlspecialchars($category['desc']); ?></td>
+                                                <td><?= htmlspecialchars($formatted_date); ?></td><!--  Example: 2025-03-25 -->
+                                                <td>
+                                                    <?php if ($category['status'] == 1) { ?>
+                                                        <a href='?ac=status&t=inactive&requestid=<?= htmlspecialchars($category['category_code']) ?>'>
+                                                            <span class="bg-lightgreen badges">Active</span>
+                                                        </a>
+                                                    <?php } else { ?>
+                                                        <a href='?ac=status&t=active&requestid=<?= htmlspecialchars($category['category_code']) ?>'>
+                                                            <span class="bg-lightred badges">Inactive</span>
+                                                        </a>
+                                                    <?php } ?>
+                                                </td>
+                                                <td>
+                                                    <a class="me-3" href="editcategory?editid=<?= htmlspecialchars($category['category_code']) ?>">
+                                                        <img src="assets/img/icons/edit.svg" alt="img">
+                                                    </a>
+                                                    <a class="me-2 confirm-text" href="javascript:void(0);" name="selected_category_individual[]" data-category-code="<?= htmlspecialchars($category['category_code']); ?>">
+                                                        <img src="assets/img/icons/delete.svg" alt="Delete">
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php } ?>
+                                    </tbody>
+                                </table>
+                            </form>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -509,6 +582,94 @@ if (isset($response['error'])) {
     <script src="assets/plugins/sweetalert/sweetalerts.min.js"></script>
 
     <script src="assets/js/script.js"></script>
+    <script>
+        // To delete multiple categories
+        function confirmBulkDelete() {
+            // Check if the button is disabled
+            if (deleteBtn.style.pointerEvents === 'none') {
+                return; // Do nothing if the button is disabled
+            }
+            const selectedUsers = document.querySelectorAll('.categoryCheckbox:checked');
+
+            if (selectedUsers.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Users Selected',
+                    text: 'Please select at least one user to delete.'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this action!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff9f43',
+                cancelButtonColor: '#dc3545',
+                confirmButtonText: 'Yes, delete them!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('category').submit();
+                }
+            });
+        }
+        // To delete single category
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.confirm-text')) {
+                const button = e.target.closest('.confirm-text');
+                const categoryCode = button.getAttribute('data-category-code');
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#ff9f43",
+                    cancelButtonColor: "#dc3545",
+                    confirmButtonText: "Yes, delete it!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = `?ac=delete&requestid=${categoryCode}`;
+                    }
+                });
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleDeleteButton(); // Ensure the initial state is correct
+        });
+        // Select all checkboxes when header checkbox is clicked
+        document.getElementById('select-all').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.categoryCheckbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            toggleDeleteButton();
+        });
+
+        // Enable or disable the Delete button (image) based on checkbox selection
+        document.querySelectorAll('.categoryCheckbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                toggleDeleteButton();
+            });
+        });
+
+        function toggleDeleteButton() {
+            const checkedCount = document.querySelectorAll('.categoryCheckbox:checked').length;
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            if (checkedCount === 0) {
+                deleteBtn.style.opacity = '0.5'; // Visually disable
+                deleteBtn.style.pointerEvents = 'none'; // Disable interaction
+            } else {
+                deleteBtn.style.opacity = '1000';
+                deleteBtn.style.pointerEvents = 'auto'; // Enable interaction
+            }
+        }
+        /* to stop displaying this error alert
+        DataTables warning: table id=DataTables_Table_0 - Cannot reinitialise DataTable. For more information about this error, please see http://datatables.net/tn/3 */
+        $.fn.dataTable.ext.errMode = 'log';
+    </script>
 </body>
 
 </html>

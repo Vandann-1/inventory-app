@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           $_SESSION['token'] = $response['token'];
           $user_data = $response['user'];
           $_SESSION['username'] = $user_data['username'];
+          $_SESSION['role'] = $user_data['role'];
           $_SESSION['Admin_Login'] = "yes";
           header('location: index');
           exit();

@@ -1,6 +1,6 @@
 <?php
+ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
-
 
 // Check Admin_Login session
 if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION['Admin_Login'] == '' && $_SESSION['Admin_Login'] != 'yes') {
@@ -295,6 +295,7 @@ if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION[
                                 <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
+                        <?php if($_SESSION['role'] == 'Admin') { ?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
                             <ul>
@@ -302,6 +303,7 @@ if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION[
                                 <li><a href="userlists">Users List</a></li>
                             </ul>
                         </li>
+                        <?php }?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>

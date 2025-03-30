@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 ini_set('display_errors', 'Off'); // Not to show errors on page
 session_start();
 require 'api.php';
@@ -8,24 +8,17 @@ if (!isset($_SESSION['Admin_Login']) && !isset($_SESSION['token']) && $_SESSION[
     // Redirect to login page
     header('Location: login');
     exit();
-} else {
-    if ($_SESSION['role'] !== 'Admin') {
-        header('Location: index');
-        exit();
-    }
 }
 
-$users = '';
-
-// To get all the users data
+$categories = '';
 $token = $_SESSION['token'];
-$response = sendRequestToDjango('users/', [], $token, 'GET');
+$response = sendRequestToDjango('sub_categories/', [], $token, 'GET');
 
 if (isset($response['error'])) {
     echo "Error: " . $response['error'];
 } else {
-    $users = $response['users'];
-    //$userCount = count($users); // Get total number of users
+    $categories = $response['SubCategories'];
+    //$categoryCount = count($categories); // Get total number of categories
 }
 
 // To show success msg after creation of user and reload
@@ -46,7 +39,7 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
     if ($action == 'status') {
         // Sending data to Django
         $response = sendRequestToDjango('active_inactive/', [
-            "type" => "users",
+            "type" => "subCategories",
             "action" => $type, // active or inactive
             "request_code" => $request_id
         ], $_SESSION['token']);
@@ -62,12 +55,12 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
     }
 
     if ($action == "delete") {
-        $userCodes = $request_id;
+        $subCategoryCode = $request_id;
 
-        if (!empty($userCodes)) {
+        if (!empty($subCategoryCode)) {
             $response = sendRequestToDjango('bulk_delete/', [
-                "type" => "users",
-                "deletion_codes" => [$userCodes]
+                "type" => "subCategories",
+                'deletion_codes' => [$subCategoryCode] 
             ], $_SESSION['token']);
 
             if (isset($response['success']) && $response['success'] === true) {
@@ -80,18 +73,18 @@ if (isset($_GET['ac']) && !empty($_GET['ac']) && isset($_GET['requestid']) && !e
                 $msg = "<div class='alert alert-danger'>Error: " . htmlspecialchars($response['message'] ?? 'Unknown error') . "</div>";
             }
         } else {
-            $msg = "<div class='alert alert-danger'>No users selected for deletion.</div>";
+            $msg = "<div class='alert alert-danger'>No category selected for deletion.</div>";
         }
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!empty($_POST['selected_users'])) {
-        $selectedUsers = $_POST['selected_users'];
+    if (!empty($_POST['selected_sub_categories'])) {
+        $selectedSubCategories = $_POST['selected_sub_categories'];
 
         $response = sendRequestToDjango('bulk_delete/', [
-            "type" => "users",
-            "deletion_codes" => $selectedUsers
+            "type" => "subCategories",
+            'deletion_codes' => $selectedSubCategories
         ], $_SESSION['token']);
 
         if (isset($response['success']) && $response['success'] === true) {
@@ -104,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = "<div class='alert alert-danger'>Error: " . htmlspecialchars($response['message'] ?? 'Unknown error') . "</div>";
         }
     } else {
-        $msg = "<div class='alert alert-danger'>No users selected for deletion.</div>";
+        $msg = "<div class='alert alert-danger'>No category selected for deletion.</div>";
     }
 }
 
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -121,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="keywords" content="admin, estimates, bootstrap, business, corporate, creative, invoice, html5, responsive, Projects">
     <meta name="author" content="Dreamguys - Bootstrap Admin Template">
     <meta name="robots" content="noindex, nofollow">
-    <title>Users | TS</title>
+    <title>Sub Category | TS</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.jpg">
 
@@ -131,14 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
 
-    <link rel="stylesheet" href="assets/css/bootstrap-datetimepicker.min.css">
-
     <link rel="stylesheet" href="assets/css/dataTables.bootstrap4.min.css">
 
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.5.2/css/all.css">
 
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -153,10 +143,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="header">
 
             <div class="header-left active">
-                <a href="index" class="logo">
+                <a href="index.html" class="logo">
                     <img src="assets/img/logo.png" alt="">
                 </a>
-                <a href="index" class="logo-small">
+                <a href="index.html" class="logo-small">
                     <img src="assets/img/logo-small.png" alt="">
                 </a>
                 <a id="toggle_btn" href="javascript:void(0);">
@@ -190,7 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </li>
 
-
                 <li class="nav-item dropdown">
                     <a href="javascript:void(0);" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
                         <img src="assets/img/icons/notification-bing.svg" alt="img"> <span class="badge rounded-pill">4</span>
@@ -203,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="noti-content">
                             <ul class="notification-list">
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-02.jpg">
@@ -216,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-03.jpg">
@@ -229,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-06.jpg">
@@ -242,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-17.jpg">
@@ -255,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </a>
                                 </li>
                                 <li class="notification-message">
-                                    <a href="activities">
+                                    <a href="activities.html">
                                         <div class="media d-flex">
                                             <span class="avatar flex-shrink-0">
                                                 <img alt="" src="assets/img/profiles/avatar-13.jpg">
@@ -270,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </ul>
                         </div>
                         <div class="topnav-dropdown-footer">
-                            <a href="activities">View all Notifications</a>
+                            <a href="activities.html">View all Notifications</a>
                         </div>
                     </div>
                 </li>
@@ -303,9 +292,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="dropdown mobile-user-menu">
                 <a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
                 <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" href="profile">My Profile</a>
-                    <a class="dropdown-item" href="generalsettings">Settings</a>
-                    <a class="dropdown-item" href="signin">Logout</a>
+                    <a class="dropdown-item" href="profile.html">My Profile</a>
+                    <a class="dropdown-item" href="generalsettings.html">Settings</a>
+                    <a class="dropdown-item" href="signin.html">Logout</a>
                 </div>
             </div>
 
@@ -320,13 +309,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="index"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
                         </li>
                         <li class="submenu">
-                            <a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
+                            <a href="javascript:void(0);" class="active"><img src="assets/img/icons/product.svg" alt="img"><span> Product</span> <span class="menu-arrow"></span></a>
                             <ul>
                                 <li><a href="productlist">Product List</a></li>
                                 <li><a href="addproduct">Add Product</a></li>
                                 <li><a href="categorylist">Category List</a></li>
                                 <li><a href="addcategory">Add Category</a></li>
-                                <li><a href="subcategorylist">Sub Category List</a></li>
+                                <li><a href="subcategorylist" class="active">Sub Category List</a></li>
                                 <li><a href="subaddcategory">Add Sub Category</a></li>
                                 <li><a href="brandlist">Brand List</a></li>
                                 <li><a href="addbrand">Add Brand</a></li>
@@ -390,15 +379,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <li><a href="customerreport">Customer Report</a></li>
                             </ul>
                         </li>
-                        <?php if ($_SESSION['role'] == 'Admin') { ?>
-                            <li class="submenu">
-                                <a href="javascript:void(0);" class="active"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
-                                <ul>
-                                    <li><a href="newuser">New User </a></li>
-                                    <li><a href="userlists" class="active">Users List</a></li>
-                                </ul>
-                            </li>
-                        <?php } ?>
+                        <?php if($_SESSION['role'] == 'Admin') { ?>
+                        <li class="submenu">
+                            <a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Users</span> <span class="menu-arrow"></span></a>
+                            <ul>
+                                <li><a href="newuser">New User </a></li>
+                                <li><a href="userlists">Users List</a></li>
+                            </ul>
+                        </li>
+                        <?php }?>
                         <li class="submenu">
                             <a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Settings</span> <span class="menu-arrow"></span></a>
                             <ul>
@@ -419,11 +408,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="content">
                 <div class="page-header">
                     <div class="page-title">
-                        <h4>User List</h4>
-                        <h6>Manage your User</h6>
+                        <h4>Product Sub Category list</h4>
+                        <h6>View/Search product Category</h6>
                     </div>
                     <div class="page-btn">
-                        <a href="newuser" class="btn btn-added"><img src="assets/img/icons/plus.svg" alt="img" class="me-2">Add User</a>
+                        <a href="subaddcategory" class="btn btn-added"><img src="assets/img/icons/plus.svg" class="me-2" alt="img"> Add Sub Category</a>
                     </div>
                 </div>
 
@@ -438,9 +427,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </a>
                                 </div>
                                 <div class="search-input">
-                                    <a class="btn btn-searchset">
-                                        <img src="assets/img/icons/search-white.svg" alt="img">
-                                    </a>
+                                    <a class="btn btn-searchset"><img src="assets/img/icons/search-white.svg" alt="img"></a>
                                 </div>
                             </div>
                             <div class="wordset">
@@ -466,29 +453,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="row">
                                     <div class="col-lg-2 col-sm-6 col-12">
                                         <div class="form-group">
-                                            <input type="text" placeholder="Enter User Name">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-2 col-sm-6 col-12">
-                                        <div class="form-group">
-                                            <input type="text" placeholder="Enter Phone">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-2 col-sm-6 col-12">
-                                        <div class="form-group">
-                                            <input type="text" placeholder="Enter Email">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-2 col-sm-6 col-12">
-                                        <div class="form-group">
+                                            <label>Category</label>
                                             <select class="select">
-                                                <option>Disable</option>
-                                                <option>Enable</option>
+                                                <option>Choose Category</option>
+                                                <option>Computers</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <label>Sub Category</label>
+                                            <select class="select">
+                                                <option>Choose Sub Category</option>
+                                                <option>Fruits</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <label>Category Code</label>
+                                            <select class="select">
+                                                <option>CT001</option>
+                                                <option>CT002</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-lg-1 col-sm-6 col-12 ms-auto">
                                         <div class="form-group">
+                                            <label>&nbsp;</label>
                                             <a class="btn btn-filters ms-auto"><img src="assets/img/icons/search-whites.svg" alt="img"></a>
                                         </div>
                                     </div>
@@ -497,70 +489,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="table-responsive">
-                            <form method="post" id="users">
-                                <table class="table datanew">
+                        <form method="post" id="sub_category">
+                                <table class="table  datanew">
                                     <?php if (isset($msg)) {
                                         echo $msg;
                                     } ?>
-                                    <thead>
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <label class="checkboxs">
+                                                <input type="checkbox" id="select-all">
+                                                <span class="checkmarks"></span>
+                                            </label>
+                                        </th>
+                                        <th>Parent category</th>
+                                        <th>Category</th>
+                                        <th>Category Code</th>
+                                        <th>Description</th>
+                                        <th>Created On</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($categories as $category) {
+                                            
+                                            $createdAt = $category['created_at'] ?? null; // Ensure correct field name
+
+                                            if (!empty($createdAt)) {
+                                                $date = DateTime::createFromFormat('Y-m-d H:i:s.u', $createdAt) 
+                                                ?: DateTime::createFromFormat('Y-m-d H:i:s', $createdAt);
+
+                                            } else {
+                                                $date = false;
+                                            }
+                                        
+                                            $formatted_date = ($date) ? $date->format('Y-m-d h:i A') : "NA"; // Fallback to NA
+                                    ?>
                                         <tr>
-                                            <th>
+                                            <td>
                                                 <label class="checkboxs">
-                                                    <input type="checkbox" id="select-all">
+                                                    <input type="checkbox" class="subCategoryCheckbox" name="selected_sub_categories[]" value="<?= $category['category_code']; ?>">
                                                     <span class="checkmarks"></span>
                                                 </label>
-                                            </th>
-                                            <th>Full name</th>
-                                            <th>Phone</th>
-                                            <th>Email</th>
-                                            <th>Role</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
+                                            </td>
+                                            <td><?= htmlspecialchars($category['parent_category_name']); ?></td>
+                                            <td><?= htmlspecialchars($category['name']); ?></td>
+                                            <td><?= htmlspecialchars($category['custom_code']); ?></td>
+                                            <td><?= htmlspecialchars($category['desc']); ?></td>
+                                            <td><?= htmlspecialchars($formatted_date); ?></td><!--  Example: 2025-03-25 -->
+                                            <td>
+                                                <?php if ($category['status'] == 1) { ?>
+                                                    <a href='?ac=status&t=inactive&requestid=<?= htmlspecialchars($category['category_code']) ?>'>
+                                                        <span class="bg-lightgreen badges">Active</span>
+                                                    </a>
+                                                <?php } else { ?>
+                                                    <a href='?ac=status&t=active&requestid=<?= htmlspecialchars($category['category_code']) ?>'>
+                                                        <span class="bg-lightred badges">Inactive</span>
+                                                    </a>
+                                                <?php } ?>
+                                            </td>
+                                            <td>
+                                                <a class="me-3" href="editsubcategory?editid=<?= htmlspecialchars($category['category_code']) ?>">
+                                                    <img src="assets/img/icons/edit.svg" alt="img">
+                                                </a>
+                                                <a class="me-2 confirm-text" href="javascript:void(0);" name="selected_subcategory_individual[]" data-subcategory-code="<?= htmlspecialchars($category['category_code']); ?>">
+                                                    <img src="assets/img/icons/delete.svg" alt="Delete">
+                                                </a>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($users as $user) { ?>
-                                            <tr>
-                                                <td>
-                                                    <label class="checkboxs">
-                                                    <input type="checkbox" class="userCheckbox" name="selected_users[]" value="<?= $user['url_code']; ?>">
-                                                        <span class="checkmarks"></span>
-                                                    </label>
-                                                </td>
-                                                <td><?= htmlspecialchars($user['username']); ?></td>
-                                                <td><?= !empty($user['mobile_no']) ? htmlspecialchars($user['mobile_no']) : 'N/A'; ?></td>
-                                                <td><a href="mailto:<?= htmlspecialchars($user['email']); ?>"><?= htmlspecialchars($user['email']); ?></a></td>
-                                                <td>
-                                                    <?php if ($user['role'] == 'Admin') { ?>
-                                                        <span class="bg-lightgreen badges">Admin</span>
-                                                    <?php } else { ?>
-                                                        <span class="bg btn-primary badges">User</span>
-                                                    <?php } ?>
-                                                </td>
-                                                <td>
-                                                    <?php if ($user['status'] == 1) { ?>
-                                                        <a href='?ac=status&t=inactive&requestid=<?= htmlspecialchars($user['url_code']) ?>'>
-                                                            <span class="bg-lightgreen badges">Active</span>
-                                                        </a>
-                                                    <?php } else { ?>
-                                                        <a href='?ac=status&t=active&requestid=<?= htmlspecialchars($user['url_code']) ?>'>
-                                                            <span class="bg-lightred badges">Restricted</span>
-                                                        </a>
-                                                    <?php } ?>
-                                                </td>
-                                                <td>
-                                                    <a class="me-3" href="edituser?editid=<?= $user['url_code']; ?>">
-                                                        <img src="assets/img/icons/edit.svg" alt="Edit">
-                                                    </a>
-                                                    <a class="me-2 confirm-text" href="javascript:void(0);" name="selected_users_individual[]" data-user-code="<?= htmlspecialchars($user['url_code']); ?>">
-                                                        <img src="assets/img/icons/delete.svg" alt="Delete">
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        <?php } ?>
-                                    </tbody>
-                                </table>
-                            </form>
+                                    <?php } ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -570,183 +570,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
 
-    <div class="modal fade" id="showpayment" tabindex="-1" aria-labelledby="showpayment" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Show Payments</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Reference</th>
-                                    <th>Amount </th>
-                                    <th>Paid By </th>
-                                    <th>Paid By </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="bor-b1">
-                                    <td>2022-03-07 </td>
-                                    <td>INV/SL0101</td>
-                                    <td>$ 1500.00 </td>
-                                    <td>Cash</td>
-                                    <td>
-                                        <a class="me-2" href="javascript:void(0);">
-                                            <img src="assets/img/icons/printer.svg" alt="img">
-                                        </a>
-                                        <a class="me-2" href="javascript:void(0);" data-bs-target="#editpayment" data-bs-toggle="modal" data-bs-dismiss="modal">
-                                            <img src="assets/img/icons/edit.svg" alt="img">
-                                        </a>
-                                        <a class="me-2 confirm-text" href="javascript:void(0);">
-                                            <img src="assets/img/icons/delete.svg" alt="img">
-                                        </a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="modal fade" id="createpayment" tabindex="-1" aria-labelledby="createpayment" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Payment</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Customer</label>
-                                <div class="input-group">
-                                    <input type="text" value="2022-03-07" class="datetimepicker">
-                                    <a class="scanner-set input-group-text">
-                                        <img src="assets/img/icons/datepicker.svg" alt="img">
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Reference</label>
-                                <input type="text" value="INV/SL0101">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Received Amount</label>
-                                <input type="text" value="1500.00">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Paying Amount</label>
-                                <input type="text" value="1500.00">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Payment type</label>
-                                <select class="select">
-                                    <option>Cash</option>
-                                    <option>Online</option>
-                                    <option>Inprogress</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-group">
-                                <label>Note</label>
-                                <textarea class="form-control"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-submit">Submit</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="modal fade" id="editpayment" tabindex="-1" aria-labelledby="editpayment" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Payment</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Customer</label>
-                                <div class="input-group">
-                                    <input type="text" value="2022-03-07" class="datetimepicker">
-                                    <a class="scanner-set input-group-text">
-                                        <img src="assets/img/icons/datepicker.svg" alt="img">
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Reference</label>
-                                <input type="text" value="INV/SL0101">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Received Amount</label>
-                                <input type="text" value="1500.00">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Paying Amount</label>
-                                <input type="text" value="1500.00">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-sm-12 col-12">
-                            <div class="form-group">
-                                <label>Payment type</label>
-                                <select class="select">
-                                    <option>Cash</option>
-                                    <option>Online</option>
-                                    <option>Inprogress</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-group">
-                                <label>Note</label>
-                                <textarea class="form-control"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-submit">Submit</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <script data-cfasync="false" src="../../cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
     <script src="assets/js/jquery-3.6.0.min.js"></script>
 
     <script src="assets/js/feather.min.js"></script>
@@ -760,21 +583,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="assets/plugins/select2/js/select2.min.js"></script>
 
-    <script src="assets/js/moment.min.js"></script>
-    <script src="assets/js/bootstrap-datetimepicker.min.js"></script>
-
     <script src="assets/plugins/sweetalert/sweetalert2.all.min.js"></script>
     <script src="assets/plugins/sweetalert/sweetalerts.min.js"></script>
 
     <script src="assets/js/script.js"></script>
     <script>
-        // To delete multiple users
+        // To delete multiple categories
         function confirmBulkDelete() {
             // Check if the button is disabled
             if (deleteBtn.style.pointerEvents === 'none') {
                 return; // Do nothing if the button is disabled
             }
-            const selectedUsers = document.querySelectorAll('.userCheckbox:checked');
+            const selectedUsers = document.querySelectorAll('.subCategoryCheckbox:checked');
 
             if (selectedUsers.length === 0) {
                 Swal.fire({
@@ -795,16 +615,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 confirmButtonText: 'Yes, delete them!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById('users').submit();
+                    document.getElementById('sub_category').submit();
                 }
             });
         }
-
-        // To delete single user
+        // To delete single category
         document.addEventListener('click', function(e) {
             if (e.target.closest('.confirm-text')) {
                 const button = e.target.closest('.confirm-text');
-                const userCode = button.getAttribute('data-user-code');
+                const subCategoryCode = button.getAttribute('data-subcategory-code');
 
                 Swal.fire({
                     title: "Are you sure?",
@@ -816,18 +635,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     confirmButtonText: "Yes, delete it!"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = `?ac=delete&requestid=${userCode}`;
+                        window.location.href = `?ac=delete&requestid=${subCategoryCode}`;
                     }
                 });
             }
         });
-
         document.addEventListener('DOMContentLoaded', function() {
             toggleDeleteButton(); // Ensure the initial state is correct
         });
         // Select all checkboxes when header checkbox is clicked
         document.getElementById('select-all').addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('.userCheckbox');
+            const checkboxes = document.querySelectorAll('.subCategoryCheckbox');
             checkboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
@@ -835,14 +653,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         // Enable or disable the Delete button (image) based on checkbox selection
-        document.querySelectorAll('.userCheckbox').forEach(checkbox => {
+        document.querySelectorAll('.subCategoryCheckbox').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 toggleDeleteButton();
             });
         });
 
         function toggleDeleteButton() {
-            const checkedCount = document.querySelectorAll('.userCheckbox:checked').length;
+            const checkedCount = document.querySelectorAll('.subCategoryCheckbox:checked').length;
             const deleteBtn = document.getElementById('deleteBtn');
 
             if (checkedCount === 0) {
@@ -853,7 +671,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 deleteBtn.style.pointerEvents = 'auto'; // Enable interaction
             }
         }
-
         /* to stop displaying this error alert
         DataTables warning: table id=DataTables_Table_0 - Cannot reinitialise DataTable. For more information about this error, please see http://datatables.net/tn/3 */
         $.fn.dataTable.ext.errMode = 'log';
