@@ -7,10 +7,10 @@ from rest_framework import status
 from django.core.files.storage import default_storage
 
 # serializer================================
-from .serializers import UserSerializer, CategorySerializer , ProductSerializer , SupplierSerializer
+from .serializers import UserSerializer, CategorySerializer , ProductSerializer , SupplierSerializer , SubCategorySerializer
 #=============================================
 
-from .models import Categories, CustomUser , Product , Supplier
+from .models import Categories, CustomUser , Product , Supplier, SubCategory
 from django.utils import timezone
 import pytz
 
@@ -207,12 +207,13 @@ def users(request):
 @api_view(['POST'])
 def bulk_delete(request):
     type = request.data.get('type')
+    deletion_codes = request.data.get('deletion_codes', [])
     if type == 'categories':
-        category_codes = request.data.get('category_codes', [])
-        if not category_codes:
+        
+        if not deletion_codes:
             return Response({"message": "No categories selected for deletion."}, status=400)
 
-        deleted_count, _ = Categories.objects.filter(category_code__in=category_codes).delete()
+        deleted_count, _ = Categories.objects.filter(category_code__in=deletion_codes).delete()
 
         if deleted_count == 0:
             return Response({"message": "No matching categories found to delete."}, status=404)
@@ -220,101 +221,106 @@ def bulk_delete(request):
         return Response({"success": True, "message": "Selected categories deleted successfully."})
         
     elif type == 'users':
-        user_codes = request.data.get('user_codes', [])
-        if not user_codes:
+        if not deletion_codes:
             return Response({"message": "No users selected for deletion."}, status=400)
 
-        deleted_count, _ = CustomUser.objects.filter(user_code__in=user_codes).delete()
+        deleted_count, _ = CustomUser.objects.filter(user_code__in=deletion_codes).delete()
 
         if deleted_count == 0:
             return Response({"message": "No matching users found to delete."}, status=404)
 
         return Response({"success": True, "message": "Selected users deleted successfully."})
+    
+    elif type == 'subCategories':
+        if not deletion_codes:
+            return Response({"message": "No subcategories selected for deletion."}, status=400)
+
+        deleted_count, _ = SubCategory.objects.filter(subcategory_code__in=deletion_codes).delete()
+
+        if deleted_count == 0:
+            return Response({"message": "No matching subcategories found to delete."}, status=404)
+
+        return Response({"success": True, "message": "Selected subcategories deleted successfully."})
 
 
 
 @api_view(['POST'])
-def user_management(request):
+def active_inactive(request):
+    type = request.data.get('type')
     action = request.data.get('action')
-    user_id = request.data.get('user_id')
+    request_code = request.data.get('request_code')
+    if type == 'users':
 
-    if not action or not user_id:
-        return Response({"message": "Missing action or user_id"}, status=400)
+        if not action or not request_code:
+            return Response({"message": "Missing action or user_id"}, status=400)
 
-    if action not in {'active', 'inactive'}:
-        return Response({"message": "Invalid action"}, status=400)
+        if action not in {'active', 'inactive'}:
+            return Response({"message": "Invalid action"}, status=400)
 
-    try:
-        user = CustomUser.objects.get(user_code=user_id)
-
-        user.is_active = True if action == 'active' else False
-        user.save()
-
-        status_message = "activated" if user.is_active else "deactivated"
-        return Response({"message": f"User {status_message} successfully"}, status=200)
-
-    except CustomUser.DoesNotExist:
-        return Response({"message": "User not found"}, status=404)
-
-    except Exception as e:
-        return Response({"message": f"Error: {str(e)}"}, status=500)
-    
-  
-    
-# add categories for  
-   
-
-""" @api_view(['GET', 'POST'])
-def categories(request):
-    if request.method == 'POST':
-        category_name = request.data.get('category_name')
-        category_desc = request.data.get('category_desc')
-
-        # Validation
-        if not category_name or category_desc is None:
-            return Response({"message": "All fields are required"}, status=400)
-
-        if Categories.objects.filter(name=category_name).exists():
-            return Response({"message": "Category with the same name already exists"}, status=409)
-
-        # Create Category
-        category = Categories.objects.create(
-            name=category_name,
-            desc=category_desc
-        )
-        serializer = CategorySerializer(category)
-
-        refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
-
-        return Response({
-            "message": "Category Created Successfully!",
-            "token": str(refresh.access_token),
-            "refresh": str(refresh),
-            "data": serializer.data
-        }, status=201)
-
-    # Handle GET Requests
-    category_code = request.GET.get('category_code')
-
-    if category_code:
         try:
-            category = Categories.objects.get(category_code=category_code)
-            serializer = CategorySerializer(category)
-            return Response(serializer.data)
+            user = CustomUser.objects.get(user_code=request_code)
+
+            user.is_active = True if action == 'active' else False
+            user.save()
+
+            status_message = "activated" if user.is_active else "deactivated"
+            return Response({"message": f"User {status_message} successfully"}, status=200)
+
+        except CustomUser.DoesNotExist:
+            return Response({"message": "User not found"}, status=404)
+
+        except Exception as e:
+            return Response({"message": f"Error: {str(e)}"}, status=500)
+    
+    elif type == 'categories':
+
+        if not action or not request_code:
+            return Response({"message": "Missing action or category_code"}, status=400)
+
+        if action not in {'active', 'inactive'}:
+            return Response({"message": "Invalid action"}, status=400)
+
+        try:
+            category = Categories.objects.get(category_code=request_code)
+
+            category.status = True if action == 'active' else False
+            category.save()
+
+            status_message = "activated" if category.status else "deactivated"
+            return Response({"message": f"Category {status_message} successfully"}, status=200)
+
         except Categories.DoesNotExist:
             return Response({"message": "Category not found"}, status=404)
 
-    # Retrieve All Categories
-    categories = Categories.objects.all()
-    serializer = CategorySerializer(categories, many=True)
-    return Response({"Categories": serializer.data})
+        except Exception as e:
+            return Response({"message": f"Error: {str(e)}"}, status=500)
+        
+    elif type == 'subCategories':
 
-# To show the list of all product and if product_code is provided, fetch particular user
- """
+        if not action or not request_code:
+            return Response({"message": "Missing action or sub_category_code"}, status=400)
 
+        if action not in {'active', 'inactive'}:
+            return Response({"message": "Invalid action"}, status=400)
 
+        try:
+            subCategory = SubCategory.objects.get(subcategory_code=request_code)
 
+            subCategory.status = True if action == 'active' else False
+            subCategory.save()
 
+            status_message = "activated" if subCategory.status else "deactivated"
+            return Response({"message": f"SubCategory {status_message} successfully"}, status=200)
+
+        except SubCategory.DoesNotExist:
+            return Response({"message": "SubCategory not found"}, status=404)
+
+        except Exception as e:
+            return Response({"message": f"Error: {str(e)}"}, status=500)
+    
+  
+    
+# Logic for adding categories
 @api_view(['GET', 'POST'])
 def categories(request):
     category_code = request.data.get('category_code')
@@ -413,6 +419,7 @@ def categories(request):
                 "id": category["id"],
                 "name": category["name"],
                 "desc": category["desc"],
+                "status" : "1" if category["status"] else "0",  # if is_active = true then 1 else 0,
                 "created_at": category["created_at"],
                 "custom_code": category["custom_code"],
                 "category_code": category["category_code"]
@@ -423,14 +430,118 @@ def categories(request):
 
 
 
+@api_view(['GET', 'POST'])
+def subCategory(request):
+    if request.method == 'POST':
+        # Check if subcategory is provided for update
+        subcategory_code = request.data.get('subcategory_code')
+        if subcategory_code:
+            try:
+                subcategory = SubCategory.objects.get(subcategory_code=subcategory_code)
+                
+                # Validation
+                category_code = request.data.get('parent_category')
+                sub_category_name = request.data.get('category_name')
+                description = request.data.get('description')
+
+                if not category_code or not sub_category_name or not description:
+                    return Response({"message": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Check for duplicates excluding current subcategory using primary key (id)
+                if SubCategory.objects.filter(subcategory_name=sub_category_name, category_code=category_code).exclude(subcategory_code=subcategory_code).exists():
+                    return Response({"message": "Subcategory with this name already exists"}, status=status.HTTP_409_CONFLICT)
+
+                # Update subcategory data
+                subcategory.category_code = category_code
+                subcategory.subcategory_name = sub_category_name
+                subcategory.desc = description
+
+                subcategory.save()
+                subcategory_data = SubCategorySerializer(subcategory).data
+                refresh = RefreshToken.for_user(request.user) if request.user.is_authenticated else RefreshToken()
+                
+                return Response({
+                    "message": "Subcategory updated successfully!",
+                    "token": str(refresh.access_token),
+                    "refresh": str(refresh), 
+                    "subcategory": subcategory_data}, status=status.HTTP_200_OK)
+            
+            except User.DoesNotExist:
+                return Response({"message": "Subcategory not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # New sub category creation
+        try:
+            logger.info(f"Request Data: {request.data}")
+            category_code = request.data.get('parent_category')
+            sub_category_name = request.data.get('category_name')
+            description = request.data.get('description')
+
+            if not category_code or not sub_category_name or not description:
+                return Response({"message": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                category = Categories.objects.get(category_code=category_code) # parent category code
+            except Categories.DoesNotExist:
+                return Response({"message": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Check for duplicate
+            if SubCategory.objects.filter(subcategory_name=sub_category_name, category=category).exists():
+                return Response({"message": "Subcategory with this name already exists"}, status=status.HTTP_409_CONFLICT)
+
+            subcategory = SubCategory.objects.create(
+                category=category,
+                subcategory_name=sub_category_name,
+                desc=description
+            )
+
+            subcategory.save()
+            subcategory_data = SubCategorySerializer(subcategory).data
+            return Response({"message": "Subcategory Created Successfully!", "subcategory": subcategory_data}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Subcategory creation failed: {str(e)}")
+            return Response({"message": "Subcategory creation failed", "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    elif request.method == 'GET':
+        subcategorycode = request.GET.get('subCategory_code')
+
+        if subcategorycode:
+            try:
+                subcategory = SubCategory.objects.get(subcategory_code=subcategorycode)
+                subcategory_data = SubCategorySerializer(subcategory).data
+                return Response({
+                    "id": subcategory_data["id"],
+                    "parent_category_name": subcategory_data["category_name"],
+                    "name": subcategory_data["subcategory_name"],
+                    "desc": subcategory_data["desc"],
+                    "parent_category_code": subcategory_data["category_code"]
+                })
+            except SubCategory.DoesNotExist:
+                return Response({"message": "Subcategory not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        subcategories = SubCategory.objects.all()
+        serializer = SubCategorySerializer(subcategories, many=True)
+        
+        # Loop through serialized data (if you want to format it manually)
+        data = []
+        for subcategory in serializer.data:
+            data.append({
+                "id": subcategory["id"],
+                "parent_category_id": subcategory["category_id"],
+                "parent_category_name": subcategory["category_name"],
+                "name": subcategory["subcategory_name"],
+                "desc": subcategory["desc"],
+                "status": "1" if subcategory["status"] else "0",
+                "created_at": subcategory["created_at"],
+                "custom_code": subcategory["subcategory_custom_code"],  # Fix here
+                "category_code": subcategory["subcategory_code"],
+                "parent_category_code": subcategory["category_code"]
+            })
 
 
+        return Response({"SubCategories": data})
 
-
-
-
-
-api_view(['GET', 'POST'])
+@api_view(['GET', 'POST'])
 @parser_classes([MultiPartParser, FormParser])
 def product_list(request):
     if request.method == 'GET':
